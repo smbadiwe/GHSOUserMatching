@@ -1,0 +1,31 @@
+CS573 Project Notes
+
+Basis paper: http://dx.doi.org/10.18293/SEKE2017-109
+Basis link: https://github.com/Taka-Coma/PJD_GHSO
+To load the StackOverflow (in postgre) data into the common postgre db (gh_so):
+- Download the Postgresq dump from http://2013.msrconf.org/challenge_data/201208_stack_overflow_postgres_dump.tar.bz
+- Unzip the .tar.bz file (I use Winrar)
+- Unzip the .tar file you get from unzipping in the step above
+- Install PostgreSql. Add it to PATH (in Environment Variable)
+- Create a database called "gh_so"
+- Create a role called "ponza". The role should AT LEAST have the privilege to create databases
+- Open command prompt (CMD or terminal; but NOT Powershell). 
+- Run the following script
+		psql -U postgres gh_so < "path-to-the-file-you-unzipped"
+	* NB: It will ask you for password. Enter the password you created when installing the database
+To rename the relevant SO tables to the required format, run the following script
+	```POSTGRESQL SCRIPT```
+	ALTER TABLE comments
+	RENAME TO so_comments;
+	ALTER TABLE posts
+	RENAME TO so_posts;
+	ALTER TABLE users
+	RENAME TO so_users;
+	ALTER TABLE votes
+	RENAME TO so_votes;
+	```END POSTGRESQL SCRIPT```
+To dump GH data from MySql in a postgre-compatible format, run the script in CMD or terminal:
+		mysqldump --compatible=ansi --default-character-set=utf8 -r gh_db.mysql -u root -p gh_db
+	* NB: The dump will be in the directory from where you're running the command. It'll be named 'gh_db.mysql'
+To migrate data from mysql to postgresql:
+	https://github.com/AnatolyUss/nmig works like charm. Node.js required.

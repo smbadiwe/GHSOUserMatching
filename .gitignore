@@ -1,0 +1,11 @@
+*.dump
+*.tar
+*.tar.bz
+*.gz
+*.mysql
+*.psql
+.idea
+.vscode
+DBs
+msr14-mysql
+venv
