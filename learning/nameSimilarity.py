@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 def main():
-	con = psql.connect('dbname=gh_so')
+	con =psql.connect(host="localhost", user='postgres', database="gh_so", password="123andro321")
 	cur = con.cursor()
 
 	### create table for name similarity

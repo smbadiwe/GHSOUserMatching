@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 def main():
-	con = psql.connect('dbname=gh_so')
+	con = psql.connect(host="localhost", user='postgres', database="gh_so", password="123andro321")
 	cur = con.cursor()
 
 	### create table for location similarity
