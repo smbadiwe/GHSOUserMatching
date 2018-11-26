@@ -12,6 +12,7 @@ class DbConnection(object):
         return self
 
     def create(self, db_name="gh_so"):
+        # self.__con = psql.connect("dbname='template1' user='dbuser' host='localhost' password='dbpass'")
         self.__con = psql.connect('dbname={}'.format(db_name))
         self.__cur = self.__con.cursor()
 
