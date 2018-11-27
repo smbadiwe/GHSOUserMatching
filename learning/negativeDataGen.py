@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
+import sys
+sys.path.insert(0, '../db_utils')
+from db_utils.dbConnection import get_db_config
 
 def main():
 	### Connect to database
-	con = psql.connect(host="localhost", user='postgres', database="gh_so", password="P@ssw0rd") # 123andro321
+	cfg = get_db_config()
+	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
 	cur = con.cursor()
+
 	### Load GH users (positive)
 	cur.execute('select distinct gh_user_id from gh_so_common_users')
 	gh_users = [r[0] for r in cur.fetchall()]

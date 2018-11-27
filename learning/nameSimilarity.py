@@ -11,8 +11,6 @@ def main():
 	cfg = get_db_config()
 	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
 	cur = con.cursor()
-	# con =psql.connect(host="localhost", user='postgres', database="gh_so", password="123andro321")
-	# cur = con.cursor()
 
 	### create table for name similarity
 	cur.execute('''
