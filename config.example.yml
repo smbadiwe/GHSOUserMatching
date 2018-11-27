@@ -1,0 +1,4 @@
+dbname: gh_so
+user: postgres
+host: localhost
+password: yourpasswordhere
