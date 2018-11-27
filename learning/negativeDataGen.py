@@ -4,7 +4,7 @@ import psycopg2 as psql
 
 def main():
 	### Connect to database
-	con = psql.connect(host="localhost", user='postgres', database="gh_so", password="123andro321")
+	con = psql.connect(host="localhost", user='postgres', database="gh_so", password="P@ssw0rd") # 123andro321
 	cur = con.cursor()
 	### Load GH users (positive)
 	cur.execute('select distinct gh_user_id from gh_so_common_users')

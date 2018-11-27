@@ -3,9 +3,13 @@
 import psycopg2 as psql
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.feature_extraction.text import TfidfVectorizer
+import sys
+sys.path.insert(0, '../db_utils')
+from db_utils.dbConnection import get_db_config
 
 def main():
-	con = psql.connect(host="localhost", user='postgres', database="gh_so", password="123andro321")
+	cfg = get_db_config()
+	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
 	cur = con.cursor()
 
 	### create table for location similarity
@@ -62,8 +66,8 @@ def main():
 			and g.location != ''
 			and s.location != ''
 	''')
-	pairs = cur.fetchall()
-	for p in pairs:
+
+	for p in cur.fetchall():
 		cur.execute('''
 			insert into similarities_among_locations
 			values (%s, %s, %s)
@@ -74,6 +78,6 @@ def main():
 	con.close()
 
 
-
 if __name__ == "__main__":
-    main()
+	main()
+	print("Done")
