@@ -3,6 +3,7 @@
 import psycopg2 as psql
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import gc
 import sys
 sys.path.insert(0, '../db_utils')
 from db_utils.dbConnection import get_db_config
@@ -60,13 +61,22 @@ def main():
 
 	### vectorizing names by trigram
 	len_trigrams = len(trigrams)
-	print("constructed trigram. Length = {}".format(len_trigrams))
+	print("constructed trigram. len_trigrams = {}. len_name_trigrams = {}".format(len_trigrams, len(name_trigrams)))
 	vectors = {}
-	for name, val in name_trigrams.items():
+	cnt = 0
+	for name in list(name_trigrams.keys()):
 		vec = [0] * len_trigrams
-		for tri in val:
+		for tri in name_trigrams[name]:
 			vec[trigrams.index(tri)] = 1
 		vectors[name] = vec
+		del name_trigrams[name]
+		del vec
+		if cnt % 2500 == 0 or (cnt > 70000 and cnt % 1000 == 0):
+			print("Iteration: {}. Name: {}".format(cnt, name))
+		if cnt % 10000 == 0:
+			print("Collecting GC at Iteration: {}. Name: {}".format(cnt, name))
+			gc.collect()
+		cnt += 1
 
 	print("constructed vectors for vectorizing names by trigram")
 	### similarities between names
