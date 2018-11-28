@@ -17,12 +17,12 @@ def main():
 		create table similarities_among_user_names
 			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
 	''')
-
+	print("created table similarities_among_user_names")
 	cur.execute('''
 		create temp table similarities_among_names
 			(g_name text, s_name text, similarity float8)
 	''')
-
+	print("created table similarities_among_names")
 	### names of GH users
 	cur.execute('''
 		select distinct u.name
@@ -30,7 +30,7 @@ def main():
 		where l.g_id = u.id and u.name != ''
 	''')
 	gh_users = [r[0] for r in cur.fetchall()]
-
+	print("read names of GH users")
 	### names of SO users
 	cur.execute('''
 		select distinct u.display_name
@@ -38,33 +38,37 @@ def main():
 		where l.s_id = u.id and u.display_name != ''
 	''')
 	so_users = [r[0] for r in cur.fetchall()]
-
+	print("read names of SO users")
 	### combining all names to construct a trigram space
 	users = []
 	users.extend(gh_users)
 	users.extend(so_users)
 	users = list(set(users))
+	print("combined users list")
 
 	### trigrams for each text
 	trigrams = []
 	name_trigrams = {}
 	for txt in users:
-		t = list(txt)
+		# t = list(txt)
 		name_trigrams[txt] = [] 
-		for i in range(0, len(t) - 3):
-			tg = "".join(t[i:i+3])
+		for i in range(0, len(txt) - 3):
+			tg = txt[i:i+3]  # "".join(t[i:i+3])
 			trigrams.append(tg)
 			name_trigrams[txt].append(tg)
 	trigrams = list(set(trigrams))
 
 	### vectorizing names by trigram
+	len_trigrams = len(trigrams)
+	print("constructed trigram. Length = {}".format(len_trigrams))
 	vectors = {}
-	for name in name_trigrams.keys():
-		vec = np.zeros(len(trigrams))
-		for tri in name_trigrams[name]:
+	for name, val in name_trigrams.items():
+		vec = np.zeros(len_trigrams)
+		for tri in val:
 			vec[trigrams.index(tri)] = 1
 		vectors[name] = vec
 
+	print("constructed vectors for vectorizing names by trigram")
 	### similarities between names
 	cur.execute('''
 		select distinct g_name, s_name
@@ -83,6 +87,7 @@ def main():
 		''', (p[0], p[1], sim[0][0]))
 		con.commit()
 
+	print("similarities_among_names processed")
 	### store similarities between GH and SO users	
 	cur.execute('''
 		insert into similarities_among_user_names
@@ -91,9 +96,12 @@ def main():
 		where g.name = c.g_name and s.name = c.s_name
 	''')
 
+	print("similarities_among_user_names processed")
+	print("Commit and close connection")
 	con.commit()
 	cur.close()
 	con.close()
+	print("End")
 
 if __name__ == "__main__":
     main()
