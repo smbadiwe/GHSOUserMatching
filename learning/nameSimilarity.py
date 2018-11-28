@@ -50,12 +50,12 @@ def main():
 	trigrams = []
 	name_trigrams = {}
 	for txt in users:
-		# t = list(txt)
-		name_trigrams[txt] = [] 
-		for i in range(0, len(txt) - 3):
-			tg = txt[i:i+3]  # "".join(t[i:i+3])
+		i_count = len(txt) - 3
+		name_trigrams[txt] = [None] * i_count
+		for i in range(0, i_count):
+			tg = txt[i:i+3]
 			trigrams.append(tg)
-			name_trigrams[txt].append(tg)
+			name_trigrams[txt][i] = tg
 	trigrams = list(set(trigrams))
 
 	### vectorizing names by trigram
@@ -63,7 +63,7 @@ def main():
 	print("constructed trigram. Length = {}".format(len_trigrams))
 	vectors = {}
 	for name, val in name_trigrams.items():
-		vec = np.zeros(len_trigrams)
+		vec = [0] * len_trigrams
 		for tri in val:
 			vec[trigrams.index(tri)] = 1
 		vectors[name] = vec
