@@ -15,10 +15,13 @@ def main():
 
 	### create table for name similarity
 	cur.execute('''
-		create table similarities_among_user_names
+		create table if not exists similarities_among_user_names
 			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
 	''')
 	print("created table similarities_among_user_names")
+	cur.execute('''
+		drop table if exists similarities_among_names
+	''')
 	cur.execute('''
 		create temp table similarities_among_names
 			(g_name text, s_name text, similarity float8)
