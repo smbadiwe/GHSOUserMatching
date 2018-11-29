@@ -77,6 +77,7 @@ def main():
 			print("Collecting GC at Iteration: {}. Name: {}".format(cnt, name))
 			gc.collect()
 		cnt += 1
+	gc.collect()
 
 	print("constructed vectors for vectorizing names by trigram")
 	### similarities between names
@@ -88,8 +89,8 @@ def main():
 	''')
 	pairs = cur.fetchall()
 	for p in pairs:
-		gv = np.array(vectors[p[0]]) 
-		sv = np.array(vectors[p[1]])
+		gv = np.array(vectors[p[0]]).reshape(-1, 1)
+		sv = np.array(vectors[p[1]]).reshape(-1, 1)
 		sim = cosine_similarity(gv, sv)
 		cur.execute('''
 			insert into similarities_among_names
