@@ -75,12 +75,14 @@ def generateNegativeDataPairs():
 		insert into negative_user_pairs 
 		values %s 
 	''' % ','.join(out))
-
     con.commit()
+
+    print("Done generating negative_user_pairs. \nNow create the combined view 'labeled_data'...")
+    with open("./createView.sql", 'r') as r:
+        query = r.read()
+    cur.execute(query)
+    con.commit()
+
     cur.close()
     con.close()
     print("========End=======")
-
-
-if __name__ == "__main__":
-    generateNegativeDataPairs()

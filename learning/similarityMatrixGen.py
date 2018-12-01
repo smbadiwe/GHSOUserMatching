@@ -3,9 +3,12 @@
 import psycopg2 as psql
 from scipy.sparse import lil_matrix
 from scipy import io
+from dbConnection import get_db_config
 
-def main():
-	con = psql.connect('dbname=gh_so')
+
+def generateSimilarityMatrix():
+	cfg = get_db_config()
+	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
 	cur = con.cursor()
 
 	### Load pairs of GH users and SO users
@@ -18,13 +21,13 @@ def main():
 
 	### Features of pairs
 	attrs = [
-		'dates',
-		'desc_aboutme',
-		'desc_comment',
-		'desc_pbody',
-		'desc_ptitle',
-		'desc_ptags',
+		# 'dates',
+		# 'desc_aboutme',
+		# 'desc_comment',
+		# 'desc_pbody',
+		# 'desc_ptitle',
 		'locations',
+		'tags',
 		'user_names'
 	]
 
@@ -41,8 +44,3 @@ def main():
 
 	cur.close()
 	con.close()
-
-
-
-if __name__ == "__main__":
-    main()

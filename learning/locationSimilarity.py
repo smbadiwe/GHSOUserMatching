@@ -12,14 +12,17 @@ def generateLocationSimilarity(redoSimilarity=False):
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
 
-    ### create table for location similarity
+    # create table for location similarity
     cur.execute('''
 		create table if not exists similarities_among_locations
 			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
 	''')
 
-    # Check if done before
-    if not redoSimilarity:
+    # check if done before
+    if redoSimilarity:
+        cur.execute('delete from similarities_among_locations')
+        con.commit()
+    else:
         cur.execute('select g_id from similarities_among_locations limit 1')
         existing = [r[0] for r in cur.fetchall()]
         if len(existing) > 0:
