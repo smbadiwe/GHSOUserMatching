@@ -75,4 +75,4 @@ def generateDescCommentSimilarity(redoSimilarity=False):
     cur.close()
     con.close()
     print("\nAll done. #good ones: {}, #bad ones: {}".format(good, bad))
-    print("=======End=======")
+    print("=======End generateDescCommentSimilarity()=======")

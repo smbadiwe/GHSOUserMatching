@@ -2,7 +2,6 @@
 from sklearn.externals import joblib
 from scipy.sparse import lil_matrix
 import threading
-import psycopg2 as psql
 import math
 import os
 import numpy as np
@@ -14,13 +13,19 @@ def get_model_path(model):
     return "../models/{}.pkl".format(model)
 
 
-def makePrediction(model, features, n_samples, save_to_file=False):
+def makePrediction(model, features, n_samples, redo, save_to_file=True):
+    print("\n===========\nRUNNING makePrediction()\n===========\n")
+    print("model: {}. n_samples: {}. save_to_file: {}".format(model, n_samples, save_to_file))
     ### model selection
     if not os.path.isdir("../models"):
         raise Exception("You need to run learning/learn.py first before running this file")
 
     con, cur = getDbConfig()
-    
+
+    if redo:
+        cur.execute("delete from predictions where model = '{}'".format(model))
+        con.commit()
+
     ### Candidate generation: test data
     print("Candidate generation: # test data = {}".format(n_samples))
 

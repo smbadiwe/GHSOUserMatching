@@ -10,7 +10,7 @@
 DBs/
 data-orig/
 models/
-*/__pycache__/
+**/__pycache__/
 __pycache__/
 msr14-mysql
 venv

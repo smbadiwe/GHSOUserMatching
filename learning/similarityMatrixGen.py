@@ -28,8 +28,11 @@ def generateSimilarityMatrix(features):
 		for c in cur.fetchall():
 			if (c[0], c[1]) in pairs:
 				S[pairs.index((c[0], c[1])), features.index(attr)] = c[2]
+
+	print("Writing similarity matrix to file")
 	io.mmwrite('../data/s.mtx', S)
 
+	print("Closing connection")
 	cur.close()
 	con.close()
 	print("=========End generateSimilarityMatrix()========")
