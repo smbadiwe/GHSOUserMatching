@@ -62,9 +62,8 @@ def getDbConfig():
     file = os.path.join(os.path.dirname(__file__), "../config.yml")
     with open(file, 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
-    
-	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-	cur = con.cursor()
+    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
+    cur = con.cursor()
 
     return con, cur
 
