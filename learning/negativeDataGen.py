@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
-from dbConnection import get_db_config
+from appUtils import get_db_config
 
 
-def generateNegativeDataPairs():
+def generateNegativeDataPairs(redo = False):
     print("\n===========\nRUNNING generateNegativeDataPairs()\n===========\n")
     ### Connect to database
     cfg = get_db_config()
@@ -15,12 +15,17 @@ def generateNegativeDataPairs():
     		create table if not exists negative_user_pairs
     			(gh_user_id int, so_user_id int)
     	''')
-    # Check if done before
-    cur.execute('select gh_user_id from negative_user_pairs limit 1')
-    existing = [r[0] for r in cur.fetchall()]
-    if len(existing) > 0:
-        print("negative_user_pairs has already been generated")
-        return
+
+    if redo:
+        cur.execute('delete from negative_user_pairs')
+        con.commit()
+    else:
+        # Check if done before
+        cur.execute('select gh_user_id from negative_user_pairs limit 1')
+        existing = [r[0] for r in cur.fetchall()]
+        if len(existing) > 0:
+            print("negative_user_pairs has already been generated")
+            return
 
     print("Generating negative_user_pairs...")
 

@@ -4,10 +4,10 @@ import psycopg2 as psql
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from nameSimilarity import buildTrigram, vectorizeNamesByTrigram
-from dbConnection import get_db_config
+from appUtils import get_db_config
 
 
-def generateTagsSimilarity(redoSimilarity = False):
+def generateTagsSimilarity(redoSimilarity=False):
     print("\n===========\nRUNNING generateTagsSimilarity()\n===========\n")
     cfg = get_db_config()
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
@@ -30,7 +30,7 @@ def generateTagsSimilarity(redoSimilarity = False):
             print("similarities_among_tags has already been generated")
             return
 
-    print("created table similarities_among_names")
+    print("created table similarities_among_tags")
 
     gh_user_tags = {}
     # GH user tags based on projects they own
@@ -145,13 +145,13 @@ def generateTagsSimilarity(redoSimilarity = False):
                 # print("\tgv_key = {}.".format(gv_key))
                 gv = np.array(vectors[gv_key]).reshape(1, -1)
             else:
-                gv = np.array([0]*len_trigrams).reshape(1, -1)
+                gv = np.array([0] * len_trigrams).reshape(1, -1)
             sv_key = so_user_tags.get(p[1])
             if sv_key is not None:
                 # print("\tsv_key = {}".format(sv_key))
                 sv = np.array(vectors[sv_key]).reshape(1, -1)
             else:
-                sv = np.array([0]*len_trigrams).reshape(1, -1)
+                sv = np.array([0] * len_trigrams).reshape(1, -1)
 
             if gv_key is not None and sv_key is not None:
                 print("p[0] = {}, p[1] = {}".format(p[0], p[1]))
@@ -166,11 +166,11 @@ def generateTagsSimilarity(redoSimilarity = False):
 			insert into similarities_among_tags
 			values (%s, %s, %s)
 		''', (p[0], p[1], sim[0][0]))
-        con.commit()
 
     print("similarities_among_tags processed. {} names not found in vectors dictionary".format(n_errors))
 
     print("Close connection")
+    con.commit()
     cur.close()
     con.close()
     print("=======End=======")

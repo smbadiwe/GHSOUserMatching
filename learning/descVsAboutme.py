@@ -1,26 +1,32 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psql
-from sklearn.metrics.pairwise import pairwise_distances
-from sklearn.feature_extraction.text import TfidfVectorizer
-import sys
-sys.path.insert(0, '../db_utils')
-from db_utils.dbConnection import get_db_config
+from appUtils import get_db_config, tfidfSimilarities
 
-def main():
+
+def generateDescAboutMeSimilarity(redoSimilarity = False):
+	print("\n===========\nRUNNING generateDescAboutMeSimilarity()\n===========\n")
 	cfg = get_db_config()
 	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
 	cur = con.cursor()
-	# con = psql.connect(host="localhost", user='postgres', database="gh_so", password="123andro321")
-	# cur = con.cursor()
 
 	### create table for description-vs-aboutme similarity
 	cur.execute('''
-		create table similarities_among_desc_aboutme
+		create table if not exists similarities_among_desc_aboutme
 			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
 	''')
 
-	### TF-IDF vectorizer
-	tfidf = TfidfVectorizer(stop_words='english')
+	# check if done before
+	if redoSimilarity:
+		cur.execute('delete from similarities_among_desc_aboutme')
+		con.commit()
+	else:
+		cur.execute('select g_id from similarities_among_desc_aboutme limit 1')
+		existing = [r[0] for r in cur.fetchall()]
+		if len(existing) > 0:
+			print("similarities_among_desc_aboutme has already been generated")
+			return
+
+	print("created table similarities_among_desc_aboutme")
 
 	### Load user info of GitHub
 	cur.execute('''
@@ -34,7 +40,6 @@ def main():
 			g_users[c[0]] += " " + c[1]
 		else:
 			g_users[c[0]] = c[1]
-	g_keys = g_users.keys()
 
 	### Load user info of Stack Overflow
 	cur.execute('''
@@ -45,22 +50,10 @@ def main():
 	s_users = {}
 	for c in cur.fetchall():
 		s_users[c[0]] = c[1]
-	s_keys = s_users.keys()
 
 	### TF-IDF computation
-	values = []
-	values.extend(g_users.values())
-	values.extend(s_users.values())
-	vecs = tfidf.fit_transform(values)
-
-	### TF-IDF vectors of GH users
-	g_vecs = vecs[:len(g_keys),:]
-
-	### TF-IDF vectors of SO users
-	s_vecs = vecs[len(g_keys):,:]
-
-	### similarities between vectors
-	sims = pairwise_distances(g_vecs, s_vecs, metric='cosine')
+	distances, g_key_indices, s_key_indices = tfidfSimilarities(g_users, s_users)
+	print("shape - distances: {}.\n".format(distances.shape))
 
 	### store similarities
 	cur.execute('''
@@ -70,18 +63,30 @@ def main():
 			and s.about_me != '' and s.id = l.s_id
 	''')
 	pairs = cur.fetchall()
+	good = 0
+	bad = 0
 	for p in pairs:
+		print("p[0]: {}, p[1]: {}".format(p[0], p[1]))
+		g_ind = g_key_indices.get(p[0])
+		s_ind = s_key_indices.get(p[1])
+
+		if g_ind is not None and s_ind is not None:
+			distance = distances[g_ind][s_ind]
+			print("\t1-similarity_val: {}".format(1-distance))
+			good += 1
+		else:
+			print("\tg_ind: {}, s_ind: {}".format(g_ind, s_ind))
+			bad += 1
+			continue
+
 		cur.execute('''
 			insert into similarities_among_desc_aboutme
 			values (%s, %s, %s)
-		''', (p[0], p[1], 1-sims[g_keys.index(p[0])][s_keys.index(p[1])]) )
+		''', (p[0], p[1], 1-distance))
 
-	con.commit()
 	con.commit()
 	cur.close()
 	con.close()
+	print("\nAll done. #good ones: {}, #bad ones: {}".format(good, bad))
+	print("=======End=======")
 
-
-if __name__ == "__main__":
-	main()
-	print("Done")

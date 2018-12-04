@@ -4,9 +4,12 @@
 *.gz
 *.mysql
 *.psql
-.idea
-.vscode
-DBs
+*.mtx
+.idea/
+.vscode/
+DBs/
+data-orig/
+models/
 msr14-mysql
 venv
 config.yml

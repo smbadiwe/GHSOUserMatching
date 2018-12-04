@@ -3,7 +3,7 @@
 import psycopg2 as psql
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.feature_extraction.text import TfidfVectorizer
-from dbConnection import get_db_config
+from appUtils import get_db_config, genetate_params_for_tf_idf
 
 
 def main():

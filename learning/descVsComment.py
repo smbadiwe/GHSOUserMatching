@@ -1,85 +1,96 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
-from sklearn.metrics.pairwise import pairwise_distances
-from sklearn.feature_extraction.text import TfidfVectorizer
+from appUtils import get_db_config, tfidfSimilarities
 
-def main():
-	con = psql.connect(host="localhost", user='postgres', database="gh_so", password="123andro321")
-	cur = con.cursor()
 
-	### create table for description-vs-comment similarity
-	cur.execute('''
-		create table similarities_among_desc_comment
+def generateDescCommentSimilarity(redoSimilarity=False):
+    print("\n===========\nRUNNING generateDescCommentSimilarity()\n===========\n")
+    cfg = get_db_config()
+    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
+    cur = con.cursor()
+
+    ### create table for description-vs-comment similarity
+    cur.execute('''
+		create table if not exists similarities_among_desc_comment
 			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
 	''')
 
-	### TF-IDF vectorizer
-	tfidf = TfidfVectorizer(stop_words='english')
+    # check if done before
+    if redoSimilarity:
+        cur.execute('delete from similarities_among_desc_comment')
+        con.commit()
+    else:
+        cur.execute('select g_id from similarities_among_desc_comment limit 1')
+        existing = [r[0] for r in cur.fetchall()]
+        if len(existing) > 0:
+            print("similarities_among_desc_comment has already been generated")
+            return
 
-	### Load user info of GitHub
-	cur.execute('''
+    print("created table similarities_among_desc_comment")
+
+    ### Load user info of GitHub
+    cur.execute('''
 		select distinct l.g_id, u.description
 		from user_project_description u, labeled_data l 
 		where u.description != '' and u.user_id = l.g_id
 	''')
-	g_users = {}
-	for c in cur.fetchall():
-		if c[0] in g_users:
-			g_users[c[0]] += " " + c[1]
-		else:
-			g_users[c[0]] = c[1]
-	g_keys = g_users.keys()
+    g_users = {}
+    for c in cur.fetchall():
+        if c[0] in g_users:
+            g_users[c[0]] += " " + c[1]
+        else:
+            g_users[c[0]] = c[1]
 
-
-	### Load user info of Stack Overflow
-	cur.execute('''
+    ### Load user info of Stack Overflow
+    cur.execute('''
 		select distinct l.s_id, u.text
-		from so_user_comments u, labeled_data l
+		from so_comments u, labeled_data l
 		where u.text != '' and u.user_id = l.s_id
 	''')
-	s_users = {}
-	for c in cur.fetchall():
-		if c[0] in s_users:
-			s_users[c[0]] += " " + c[1]
-		else:
-			s_users[c[0]] = c[1]
-	s_keys = s_users.keys()
+    s_users = {}
+    for c in cur.fetchall():
+        if c[0] in s_users:
+            s_users[c[0]] += " " + c[1]
+        else:
+            s_users[c[0]] = c[1]
 
-	### TF-IDF computation
-	values = []
-	values.extend(g_users.values())
-	values.extend(s_users.values())
-	vecs = tfidf.fit_transform(values)
+    ### TF-IDF computation
+    distances, g_key_indices, s_key_indices = tfidfSimilarities(g_users, s_users)
 
-	### TF-IDF vectors of GH users
-	g_vecs = vecs[:len(g_keys),:]
+    print("shape - distances: {}.\n".format(distances.shape))
 
-	### TF-IDF vectors of SO users
-	s_vecs = vecs[len(g_keys):,:]
-
-	### similarities between vectors
-	sims = pairwise_distances(g_vecs, s_vecs, metric='cosine')
-
-	### store similarities
-	cur.execute('''
+    ### store similarities
+    cur.execute('''
 		select distinct l.g_id, l.s_id
-		from user_project_description g, labeled_data l, so_user_comments s
+		from user_project_description g, labeled_data l, so_comments s
 		where g.description != '' and g.user_id = l.g_id
 			and s.text != '' and s.user_id = l.s_id
 	''')
-	pairs = cur.fetchall()
-	for p in pairs:
-		cur.execute('''
+    good = 0
+    bad = 0
+    for p in cur.fetchall():
+        print("p[0]: {}, p[1]: {}".format(p[0], p[1]))
+        g_ind = g_key_indices.get(p[0])
+        s_ind = s_key_indices.get(p[1])
+
+        if g_ind is not None and s_ind is not None:
+            distance = distances[g_ind][s_ind]
+            print("\t1-similarity_val: {}".format(1 - distance))
+            good += 1
+        else:
+            print("\tg_ind: {}, s_ind: {}".format(g_ind, s_ind))
+            bad += 1
+            continue
+
+        cur.execute('''
 			insert into similarities_among_desc_comment
 			values (%s, %s, %s)
-		''', (p[0], p[1], 1-sims[g_keys.index(p[0])][s_keys.index(p[1])]) )
+		''', (p[0], p[1], 1 - distance))
 
-	con.commit()
-	cur.close()
-	con.close()
-
-
-
-if __name__ == "__main__":
-    main()
+    print("Close connection")
+    con.commit()
+    cur.close()
+    con.close()
+    print("\nAll done. #good ones: {}, #bad ones: {}".format(good, bad))
+    print("=======End=======")

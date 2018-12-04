@@ -1,4 +1,4 @@
-create table user_project_description
+create table if not exists user_project_description
 as 
 	select distinct user_id, description 
 	from (

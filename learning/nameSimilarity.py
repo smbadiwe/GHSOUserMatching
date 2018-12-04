@@ -4,47 +4,7 @@ import psycopg2 as psql
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 # import gc
-
-from dbConnection import get_db_config
-
-
-def buildTrigram(list_of_texts):
-    # trigrams for each text
-    trigrams = []
-    name_trigrams = {}
-    for txt in list_of_texts:
-        if txt is None:
-            continue
-        i_count = len(txt) - 2
-        name_trigrams[txt] = [None] * i_count
-        for i in range(0, i_count):
-            tg = txt[i:i + 3]
-            trigrams.append(tg)
-            name_trigrams[txt][i] = tg
-    trigrams = list(set(trigrams))
-    return name_trigrams, trigrams
-
-
-def vectorizeNamesByTrigram(trigrams, name_trigrams):
-    # vectorizing names by trigram
-    len_trigrams = len(trigrams)
-    print("constructed trigram. len_trigrams = {}. len_name_trigrams = {}".format(len_trigrams, len(name_trigrams)))
-
-    vectors = {}
-    cnt = 0
-    for name in list(name_trigrams.keys()):
-        vec = [0] * len_trigrams
-        for tri in name_trigrams[name]:
-            vec[trigrams.index(tri)] = 1
-        vectors[name] = vec
-        if cnt % 5000 == 0 or (cnt > 70000 and cnt % 1000 == 0):
-            print("Iteration: {}. Name: {}".format(cnt, name))
-        if cnt % 10000 == 0:
-            print("Collecting GC at Iteration: {}. Name: {}".format(cnt, name))
-            # gc.collect()
-        cnt += 1
-    # gc.collect()
-    return vectors
+from appUtils import get_db_config, buildTrigram, vectorizeNamesByTrigram
 
 
 def generateNameSimilarity(redoSimilarity=False):

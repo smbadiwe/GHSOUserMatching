@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
-
+from learning.appUtils import get_db_config
 
 def main():
-	con = psql.connect('dbname=gh_so')
+	print("\n===========\nRUNNING generateDescAboutMeSimilarity()\n===========\n")
+	cfg = get_db_config()
+	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
 	cur = con.cursor()
 
 	cur.execute('''
