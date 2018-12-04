@@ -7,7 +7,7 @@ import math
 import os
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from learning.appUtils import get_db_config, computeDateSim, buildTrigram, vectorizeNamesByTrigram, tfidfSimilarities
+from appUtils import getDbConfig, computeDateSim, buildTrigram, vectorizeNamesByTrigram, tfidfSimilarities, loadGithubProjectDescription
 
 
 def get_model_path(model):
@@ -19,7 +19,7 @@ def makePrediction(model, features, n_samples, save_to_file=False):
     if not os.path.isdir("../models"):
         raise Exception("You need to run learning/learn.py first before running this file")
 
-    cfg = get_db_config()
+    cfg = getDbConfig()
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
 
@@ -47,11 +47,11 @@ def makePrediction(model, features, n_samples, save_to_file=False):
     pairs = [(c[0], c[1]) for c in cur.fetchall()]
 
     print("Generate input data matrix")
-    S = lil_matrix((n_samples * n_samples, len(attrs)))
+    S = lil_matrix((n_samples * n_samples, len(features)))
     for attr in sims.keys():
         for c in sims[attr]:
             if not math.isnan(sims[attr][c]) and (c[0], c[1]) in pairs:
-                S[pairs.index((c[0], c[1])), attrs.index(attr)] = sims[attr][c]
+                S[pairs.index((c[0], c[1])), features.index(attr)] = sims[attr][c]
     S = S.toarray()
 
     print("Load and predict")
@@ -109,7 +109,7 @@ def similarity(attr, con, sims):
 def dateSimilarity(cur, con, sims):
     cur.execute('''
 		select distinct l.g_id, l.s_id, g.created_at::date, s.creation_date
-		from users g, pairs l, so_users s
+		from users g, labeled_data_test l, so_users s
 		where g.created_at is not null and g.id = l.g_id
 			and s.creation_date is not null and s.id = l.s_id
 	''')
@@ -121,13 +121,9 @@ def dateSimilarity(cur, con, sims):
 ### Similarity computation on names 
 def nameSimilarity(cur, sims):
     cur.execute('''
-		select distinct g.name
-		from pairs l, users g
-		where l.g_id = g.id and g.name != ''
+		select distinct g_name as username from labeled_data_test
 		union
-		select distinct s.display_name
-		from pairs l, so_users s
-		where l.s_id = s.id and s.display_name != ''
+		select distinct s_name as username from labeled_data_test
 	''')
     users = list(set([c[0] for c in cur.fetchall()]))
 
@@ -136,13 +132,10 @@ def nameSimilarity(cur, sims):
     vectors = vectorizeNamesByTrigram(trigrams, name_trigrams)
 
     cur.execute('''
-		select distinct l.g_id, l.s_id, g.name, s.display_name
-		from pairs l, users g, so_users s
-		where l.g_id = g.id and l.s_id = s.id
-			and g.name != '' and s.display_name != ''
+		select distinct l.g_id, l.s_id, l.g_name, l.s_name
+		from labeled_data_test l
 	''')
-    pairs = cur.fetchall()
-    for p in pairs:
+    for p in cur.fetchall():
         try:
             gv = np.array(vectors[p[2]]).reshape(1, -1)
             sv = np.array(vectors[p[3]]).reshape(1, -1)
@@ -157,9 +150,8 @@ def nameSimilarity(cur, sims):
 def locationSimilarity(cur, sims):
     cur.execute('''
 		select l.g_id, u.location
-		from pairs l, users u
-		where l.g_id = u.id
-			and u.location != ''
+		from labeled_data_test l, users u
+		where l.g_id = u.id and u.location != ''
 	''')
     g_users = {}
     for c in cur.fetchall():
@@ -167,9 +159,8 @@ def locationSimilarity(cur, sims):
 
     cur.execute('''
 		select l.s_id, u.location
-		from pairs l, so_users u
-		where l.s_id = u.id
-			and u.location != ''
+		from labeled_data_test l, so_users u
+		where l.s_id = u.id and u.location != ''
 	''')
     s_users = {}
     for c in cur.fetchall():
@@ -181,7 +172,7 @@ def locationSimilarity(cur, sims):
 
     cur.execute('''
 		select distinct l.g_id, l.s_id
-		from pairs l, users g, so_users s
+		from labeled_data_test l, users g, so_users s
 		where l.g_id = g.id and l.s_id = s.id
 			and g.location != '' and s.location != ''
 	''')
@@ -200,12 +191,12 @@ def locationSimilarity(cur, sims):
 
 ### Similarity computation between project descriptions and comments
 def descCommentSimilarity(cur, sims):
-    g_users = loadDescription(cur)
+    g_users = loadGithubProjectDescription(cur, "labeled_data_test") 
 
     ### Load user info of Stack Overflow
     cur.execute('''
 		select distinct l.s_id, u.text
-		from so_comments u, pairs l
+		from so_comments u, labeled_data_test l
 		where u.text != '' and u.user_id = l.s_id
 	''')
     s_users = {}
@@ -221,7 +212,7 @@ def descCommentSimilarity(cur, sims):
 
     cur.execute('''
 		select distinct l.g_id, l.s_id
-		from user_project_description g, pairs l, so_comments s
+		from user_project_description g, labeled_data_test l, so_comments s
 		where g.description != '' and g.user_id = l.g_id
 			and s.text != '' and s.user_id = l.s_id
 	''')
@@ -240,11 +231,11 @@ def descCommentSimilarity(cur, sims):
 
 ### Similarity computation between project descriptions and about me
 def descAboutmeSimilarity(cur, sims):
-    g_users = loadDescription(cur)
+    g_users = loadGithubProjectDescription(cur, "labeled_data_test") 
     ### Load user info of Stack Overflow
     cur.execute('''
 		select distinct l.s_id, u.about_me
-		from so_users u, pairs l
+		from so_users u, labeled_data_test l
 		where u.about_me != '' and u.id = l.s_id
 	''')
     s_users = {}
@@ -257,12 +248,11 @@ def descAboutmeSimilarity(cur, sims):
 
     cur.execute('''
 		select distinct l.g_id, l.s_id
-		from user_project_description g, pairs l, so_users s
+		from user_project_description g, labeled_data_test l, so_users s
 		where g.description != '' and g.user_id = l.g_id
 			and s.about_me != '' and s.id = l.s_id
 	''')
-    pairs = cur.fetchall()
-    for p in pairs:
+    for p in cur.fetchall():
         g_ind = g_key_indices.get(p[0])
         s_ind = s_key_indices.get(p[1])
 
@@ -275,30 +265,14 @@ def descAboutmeSimilarity(cur, sims):
     cur.close()
 
 
-### loading descriptions
-def loadDescription(cur):
-    cur.execute('''
-		select distinct l.g_id, u.description
-		from user_project_description u, pairs l 
-		where u.description != '' and u.user_id = l.g_id
-	''')
-    g_users = {}
-    for c in cur.fetchall():
-        if c[0] in g_users:
-            g_users[c[0]] += " " + c[1]
-        else:
-            g_users[c[0]] = c[1]
-    return g_users
-
-
 ### NOT USED - Similarity computation between project descriptions and post bodies
 def descPBodySimilarity(cur, sims):
-    g_keys, g_values = loadDescription(cur)
+    g_keys, g_values = loadGithubProjectDescription(cur, "labeled_data_test") 
 
     ### Load user info of Stack Overflow
     cur.execute('''
 		select distinct l.s_id, u.body
-		from so_posts u, pairs l
+		from so_posts u, labeled_data_test l
 		where u.body != '' and u.owner_user_id = l.s_id
 	''')
     s_users = {}
@@ -327,12 +301,12 @@ def descPBodySimilarity(cur, sims):
 
 ### NOT USED - Similarity computation between project descriptions and post titles
 def descPTitleSimilarity(cur, sims):
-    g_keys, g_values = loadDescription(cur)
+    g_keys, g_values = loadGithubProjectDescription(cur, "labeled_data_test") 
 
     ### Load user info of Stack Overflow
     cur.execute('''
 		select distinct l.s_id, u.title
-		from so_posts u, pairs l
+		from so_posts u, labeled_data_test l
 		where u.title != '' and u.owner_user_id = l.s_id
 	''')
     s_users = {}
@@ -361,12 +335,12 @@ def descPTitleSimilarity(cur, sims):
 
 ### NOT USED - Similarity computation between project descriptions and post tags
 def descPTagsSimilarity(cur, sims):
-    g_keys, g_values = loadDescription(cur)
+    g_keys, g_values = loadGithubProjectDescription(cur, "labeled_data_test") 
 
     ### Load user info of Stack Overflow
     cur.execute('''
 		select distinct l.s_id, u.tags
-		from so_posts u, pairs l
+		from so_posts u, labeled_data_test l
 		where u.tags != '' and u.owner_user_id = l.s_id
 	''')
     s_users = {}
@@ -383,11 +357,10 @@ def descPTagsSimilarity(cur, sims):
 
     cur.execute('''
 		select distinct l.g_id, l.s_id
-		from user_project_description g, pairs l, so_posts s
+		from user_project_description g, labeled_data_test l, so_posts s
 		where g.description != '' and g.user_id = l.g_id
 			and s.tags != '' and s.owner_user_id = l.s_id
 	''')
-    pairs = cur.fetchall()
-    for p in pairs:
+    for p in cur.fetchall():
         sims['desc_ptags'][(p[0], p[1])] = 1 - sims_tmp[g_keys.index(p[0])][s_keys.index(p[1])]
     cur.close()

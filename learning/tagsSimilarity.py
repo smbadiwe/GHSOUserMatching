@@ -4,20 +4,14 @@ import psycopg2 as psql
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from nameSimilarity import buildTrigram, vectorizeNamesByTrigram
-from appUtils import get_db_config
+from appUtils import getDbConfig
 
 
 def generateTagsSimilarity(redoSimilarity=False):
     print("\n===========\nRUNNING generateTagsSimilarity()\n===========\n")
-    cfg = get_db_config()
+    cfg = getDbConfig()
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
-
-    # create table for name similarity
-    cur.execute('''
-		create table if not exists similarities_among_tags
-			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
-	''')
 
     # check if done before
     if redoSimilarity:
@@ -44,6 +38,7 @@ def generateTagsSimilarity(redoSimilarity=False):
             gh_user_tags[p[0]] = set([p[1]])
         else:
             gh_user_tags[p[0]].add(p[1])
+    print("gotten tags for gh users based on projects they own")
 
     # GH user tags based on projects they don't own but are part of
     cur.execute('''
@@ -60,6 +55,7 @@ def generateTagsSimilarity(redoSimilarity=False):
             gh_user_tags[p[0]] = set([p[1]])
         else:
             gh_user_tags[p[0]].add(p[1])
+    print("gotten tags for gh users based on projects they DON'T own")
 
     print("Tags gotten for {} GH users".format(len(gh_user_tags)))
 
@@ -70,10 +66,17 @@ def generateTagsSimilarity(redoSimilarity=False):
     # SO user tags
 
     so_user_tags = {}
+    # cur.execute('''
+    # select p.post_type_id, p.owner_user_id, p.last_editor_user_id, lower(p.tags)
+    # from labeled_data l, so_posts p
+    # where (l.s_id = p.owner_user_id or l.s_id = p.last_editor_user_id) and p.tags is not null
+    # ''')
+    # The above query takes forever to run. This one below is quite faster
     cur.execute('''
-    select p.post_type_id, p.owner_user_id, p.last_editor_user_id, lower(p.tags)
-    from labeled_data l, so_posts p 
-    where (p.owner_user_id = l.s_id or p.last_editor_user_id = l.s_id) and p.tags is not null
+    select p.post_type_id, p.owner_user_id, p.last_editor_user_id, lower(p.tags) from so_posts p
+    where (p.owner_user_id in (select s_id from labeled_data)
+    or p.last_editor_user_id in (select s_id from labeled_data))
+    and p.tags is not null
     ''')
     for p in cur.fetchall():
         if p[1] is None:
@@ -152,10 +155,9 @@ def generateTagsSimilarity(redoSimilarity=False):
                 sv = np.array(vectors[sv_key]).reshape(1, -1)
             else:
                 sv = np.array([0] * len_trigrams).reshape(1, -1)
-
-            if gv_key is not None and sv_key is not None:
-                print("p[0] = {}, p[1] = {}".format(p[0], p[1]))
-                print("\tgv_key = {}. sv_key = {}".format(gv_key, sv_key))
+            # if gv_key is not None and sv_key is not None:
+            #     print("p[0] = {}, p[1] = {}".format(p[0], p[1]))
+            #     print("\tgv_key = {}. sv_key = {}".format(gv_key, sv_key))
         except Exception as ex:
             n_errors += 1
             print("\tError: {}".format(ex))

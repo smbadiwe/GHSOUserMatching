@@ -1,18 +1,12 @@
 import psycopg2 as psql
-from appUtils import get_db_config
+from appUtils import getDbConfig, computeDateSim
 
 
 def generateDateSimilarity(redoSimilarity = False):
     print("\n===========\nRUNNING generateDateSimilarity()\n===========\n")
-    cfg = get_db_config()
+    cfg = getDbConfig()
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
-
-    ### create table for date similarity
-    cur.execute('''
-		create table if not exists similarities_among_dates
-			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
-	''')
 
     # check if done before
     if redoSimilarity:
@@ -37,17 +31,7 @@ def generateDateSimilarity(redoSimilarity = False):
 
     pairs = cur.fetchall()
     for p in pairs:
-        g_date, s_date = p[2], p[3]
-        if g_date > s_date:
-            num = g_date - s_date
-        else:
-            num = s_date - g_date
-
-        ### Calculate similarity
-        if num.days == 0:
-            sim = 1
-        else:
-            sim = 1.0 / num.days
+        sim = computeDateSim(p[2], p[3])
         cur.execute('''
 			insert into similarities_among_dates
 			values (%s, %s, %s)
@@ -56,3 +40,4 @@ def generateDateSimilarity(redoSimilarity = False):
     con.commit()
     cur.close()
     con.close()
+    print("=====================End==================")

@@ -1,20 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
-from appUtils import get_db_config, tfidfSimilarities
+from appUtils import getDbConfig, tfidfSimilarities, loadGithubProjectDescription
 
 
 def generateDescCommentSimilarity(redoSimilarity=False):
     print("\n===========\nRUNNING generateDescCommentSimilarity()\n===========\n")
-    cfg = get_db_config()
+    cfg = getDbConfig()
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
-
-    ### create table for description-vs-comment similarity
-    cur.execute('''
-		create table if not exists similarities_among_desc_comment
-			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
-	''')
 
     # check if done before
     if redoSimilarity:
@@ -30,17 +24,7 @@ def generateDescCommentSimilarity(redoSimilarity=False):
     print("created table similarities_among_desc_comment")
 
     ### Load user info of GitHub
-    cur.execute('''
-		select distinct l.g_id, u.description
-		from user_project_description u, labeled_data l 
-		where u.description != '' and u.user_id = l.g_id
-	''')
-    g_users = {}
-    for c in cur.fetchall():
-        if c[0] in g_users:
-            g_users[c[0]] += " " + c[1]
-        else:
-            g_users[c[0]] = c[1]
+    g_users = loadGithubProjectDescription(cur, "labeled_data")
 
     ### Load user info of Stack Overflow
     cur.execute('''
@@ -70,7 +54,6 @@ def generateDescCommentSimilarity(redoSimilarity=False):
     good = 0
     bad = 0
     for p in cur.fetchall():
-        print("p[0]: {}, p[1]: {}".format(p[0], p[1]))
         g_ind = g_key_indices.get(p[0])
         s_ind = s_key_indices.get(p[1])
 
@@ -79,6 +62,7 @@ def generateDescCommentSimilarity(redoSimilarity=False):
             print("\t1-similarity_val: {}".format(1 - distance))
             good += 1
         else:
+            print("p[0]: {}, p[1]: {}".format(p[0], p[1]))
             print("\tg_ind: {}, s_ind: {}".format(g_ind, s_ind))
             bad += 1
             continue

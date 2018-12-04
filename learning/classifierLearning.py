@@ -6,7 +6,7 @@ from scipy import io
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from appUtils import get_db_config
+from appUtils import getDbConfig
 from sklearn.externals import joblib
 import os
 
@@ -15,7 +15,7 @@ def startLearning():
 	if not os.path.isdir("../models"):
 		os.makedirs("../models")
 
-	cfg = get_db_config()
+	cfg = getDbConfig()
 	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
 	cur = con.cursor()
 

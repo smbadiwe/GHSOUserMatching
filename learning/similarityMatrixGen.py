@@ -3,12 +3,12 @@
 import psycopg2 as psql
 from scipy.sparse import lil_matrix
 from scipy import io
-from appUtils import get_db_config
+from appUtils import getDbConfig
 
 
-def generateSimilarityMatrix():
+def generateSimilarityMatrix(features):
 	print("\n===========\nRUNNING generateSimilarityMatrix()\n===========\n")
-	cfg = get_db_config()
+	cfg = getDbConfig()
 	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
 	cur = con.cursor()
 
@@ -20,21 +20,9 @@ def generateSimilarityMatrix():
 	''')
 	pairs = [(x[0], x[1]) for x in cur.fetchall()]
 
-	### Features of pairs
-	attrs = [
-		'dates',
-		'desc_aboutme',
-		'desc_comment',
-		# 'desc_pbody',
-		# 'desc_ptitle',
-		'locations',
-		'tags',
-		'user_names'
-	]
-
 	### Matrix generation
-	S = lil_matrix((len(pairs), len(attrs)))
-	for attr in attrs:
+	S = lil_matrix((len(pairs), len(features)))
+	for attr in features:
 		print("Processing {} similarity".format(attr))
 		cur.execute('''
 			select g_id, s_id, similarity
@@ -42,7 +30,7 @@ def generateSimilarityMatrix():
 		''' % attr)
 		for c in cur.fetchall():
 			if (c[0], c[1]) in pairs:
-				S[pairs.index((c[0], c[1])), attrs.index(attr)] = c[2]
+				S[pairs.index((c[0], c[1])), features.index(attr)] = c[2]
 	io.mmwrite('../data/s.mtx', S)
 
 	cur.close()

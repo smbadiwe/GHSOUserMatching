@@ -4,6 +4,22 @@ from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 
+### loading descriptions
+def loadGithubProjectDescription(cur, viewOrTable):
+    cur.execute('''
+		select distinct l.g_id, u.description
+		from user_project_description u, {} l 
+		where u.description != '' and u.user_id = l.g_id
+	'''.format(viewOrTable))
+    g_users = {}
+    for c in cur.fetchall():
+        if c[0] in g_users:
+            g_users[c[0]] += " " + c[1]
+        else:
+            g_users[c[0]] = c[1]
+    return g_users
+
+
 def buildTrigram(list_of_texts):
     # trigrams for each text
     trigrams = []
@@ -43,8 +59,10 @@ def vectorizeNamesByTrigram(trigrams, name_trigrams):
     return vectors
 
 
-def get_db_config():
-    with open("../config.yml", 'r') as ymlfile:
+def getDbConfig():
+    import os
+    file = os.path.join(os.path.dirname(__file__), "../config.yml")
+    with open(file, 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
     return cfg
 
@@ -127,7 +145,7 @@ class DbConnection(object):
 
     def create(self):
         print("Creating DbConnection")
-        cfg = get_db_config()
+        cfg = getDbConfig()
 
         # self.__con = psql.connect(database=cfg['database'], user=cfg['user'], host=cfg['host'], port=cfg['port'], password=cfg['password'])
         connStr = "dbname={} user={} password={} host={} port={}"\

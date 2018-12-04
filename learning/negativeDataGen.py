@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
-from appUtils import get_db_config
+from appUtils import getDbConfig
 
 
 def generateNegativeDataPairs(redo = False):
     print("\n===========\nRUNNING generateNegativeDataPairs()\n===========\n")
     ### Connect to database
-    cfg = get_db_config()
+    cfg = getDbConfig()
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
 
@@ -82,12 +82,7 @@ def generateNegativeDataPairs(redo = False):
 	''' % ','.join(out))
     con.commit()
 
-    print("Done generating negative_user_pairs. \nNow create the combined view 'labeled_data'...")
-    with open("./createView.sql", 'r') as r:
-        query = r.read()
-    cur.execute(query)
-    con.commit()
-
+    print("Done generating negative_user_pairs.")
     cur.close()
     con.close()
     print("========End=======")

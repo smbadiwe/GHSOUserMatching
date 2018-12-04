@@ -2,7 +2,7 @@ import psycopg2 as psql
 import yaml
 
 
-def get_db_config():
+def getDbConfig():
     with open("../config.yml", 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
     return cfg
@@ -22,7 +22,7 @@ class DbConnection(object):
 
     def create(self):
         print("Creating DbConnection")
-        cfg = get_db_config()
+        cfg = getDbConfig()
 
         # self.__con = psql.connect(database=cfg['database'], user=cfg['user'], host=cfg['host'], port=cfg['port'], password=cfg['password'])
         connStr = "dbname={} user={} password={} host={} port={}"\

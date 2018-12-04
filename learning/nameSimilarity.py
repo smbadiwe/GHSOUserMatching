@@ -4,20 +4,14 @@ import psycopg2 as psql
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 # import gc
-from appUtils import get_db_config, buildTrigram, vectorizeNamesByTrigram
+from appUtils import getDbConfig, buildTrigram, vectorizeNamesByTrigram
 
 
 def generateNameSimilarity(redoSimilarity=False):
     print("\n===========\nRUNNING generateNameSimilarity()\n===========\n")
-    cfg = get_db_config()
+    cfg = getDbConfig()
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
-
-    # create table for name similarity
-    cur.execute('''
-		create table if not exists similarities_among_user_names
-			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
-	''')
 
     # check if done before
     if redoSimilarity:

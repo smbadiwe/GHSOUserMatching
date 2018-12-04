@@ -1,20 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
-from appUtils import get_db_config, tfidfSimilarities
+from appUtils import getDbConfig, tfidfSimilarities
 
 
 def generateLocationSimilarity(redoSimilarity=False):
     print("\n===========\nRUNNING generateLocationSimilarity()\n===========\n")
-    cfg = get_db_config()
+    cfg = getDbConfig()
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
-
-    # create table for location similarity
-    cur.execute('''
-		create table if not exists similarities_among_locations
-			(g_id int, s_id int, similarity float8, primary key(g_id, s_id))
-	''')
 
     # check if done before
     if redoSimilarity:
@@ -57,22 +51,21 @@ def generateLocationSimilarity(redoSimilarity=False):
 		select distinct g_id, s_id
 		from labeled_data l, users g, so_users s
 		where l.g_id = g.id and l.s_id = s.id
-			and g.location != ''
-			and s.location != ''
+			and g.location != '' and s.location != ''
 	''')
     good = 0
     bad = 0
     for p in cur.fetchall():
-        print("p[0]: {}, p[1]: {}".format(p[0], p[1]))
+        # print("p[0]: {}, p[1]: {}".format(p[0], p[1]))
         g_ind = g_key_indices.get(p[0])
         s_ind = s_key_indices.get(p[1])
 
         if g_ind is not None and s_ind is not None:
             distance = distances[g_ind][s_ind]
-            print("\t1-similarity_val: {}".format(1 - distance))
+            # print("\t1-similarity_val: {}".format(1 - distance))
             good += 1
         else:
-            print("\tg_ind: {}, s_ind: {}".format(g_ind, s_ind))
+            # print("\tg_ind: {}, s_ind: {}".format(g_ind, s_ind))
             bad += 1
             continue
 
