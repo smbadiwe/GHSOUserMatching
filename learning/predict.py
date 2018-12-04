@@ -14,7 +14,7 @@ def get_model_path(model):
     return "../models/{}.pkl".format(model)
 
 
-def main():
+def makePrediction(model, features, n_samples, save_to_file=False):
     ### model selection
     if not os.path.isdir("../models"):
         raise Exception("You need to run learning/learn.py first before running this file")
@@ -23,66 +23,11 @@ def main():
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
 
-    print("Create predicted table if not exists")
-    cur.execute('''
-	create table if not exists predicted
-			(g_id int, s_id int, model character varying(5), pred int, proba float8, primary key(g_id, s_id, model))
-	''')
-    print("Create processed table if not exist")
-    cur.execute('''
-	create table if not exists processed
-			(g_id int, s_id int, model character varying(5), pred int, proba float8, primary key(g_id, s_id, model))
-	''')
-
     ### Candidate generation: test data
-    print("Candidate generation: test data")
-    counter = 100
-    cur.execute('''
-		create temp table pairs as
-		select a.id as g_id, b.id as s_id
-		from (
-			select *
-			from (
-				select distinct id
-				from users 
-				except
-				select distinct g_id
-				from processed
-				except 
-				select distinct g_id 
-				from predicted
-			) a
-			order by random()
-			limit %d
-		) a, (
-			select *
-			from (
-				select distinct id
-				from so_users 
-				except
-				select distinct s_id
-				from processed
-				except 
-				select distinct s_id 
-				from predicted
-			) a
-			order by random()
-			limit %d
-		) b
-	''' % (counter, counter))
+    print("Candidate generation: # test data = {}".format(n_samples))
 
-    attrs = [
-        'dates',
-        'desc_aboutme',
-        'desc_comment',
-        # 'desc_pbody',
-        # 'desc_ptitle',
-        'locations',
-        'tags',
-        'user_names'
-    ]
     sims = {}
-    for attr in attrs:
+    for attr in features:
         sims[attr] = {}
         t = threading.Thread(target=similarity, args=(attr, con, sims))
         t.start()
@@ -93,15 +38,16 @@ def main():
             continue
         t.join()
 
+    print("All thread returned")
     cur.execute('''
 		select g_id, s_id
-		from pairs
+		from labeled_data_test
 		order by g_id, s_id
 	''')
     pairs = [(c[0], c[1]) for c in cur.fetchall()]
 
     print("Generate input data matrix")
-    S = lil_matrix((counter * counter, len(attrs)))
+    S = lil_matrix((n_samples * n_samples, len(attrs)))
     for attr in sims.keys():
         for c in sims[attr]:
             if not math.isnan(sims[attr][c]) and (c[0], c[1]) in pairs:
@@ -110,27 +56,30 @@ def main():
 
     print("Load and predict")
 
-    model = "gbdt"
-    # model = "knn"
-    # model = "lg"
-    # model = "lr"
-    # model = "rf"
-
     clf = joblib.load(get_model_path(model))
     scores = clf.predict_proba(S)
-    classes = clf.classes_
     print("Done. scores - shape: {}. Classes: {}".format(scores.shape, clf.classes_))
     cc = 0
+
     for p in zip(pairs, scores):
         pred = clf.classes_[0] if p[1][0] >= 0.5 else clf.classes_[1]
         proba = p[1][0] if pred == clf.classes_[0] else p[1][1]
-        query = "insert into predicted values ({},{},'{}',{},{})".format(p[0][0], p[0][1], model, pred, proba)
+        query = "insert into predictions values ({},{},'{}',{},{})".format(p[0][0], p[0][1], model, pred, proba)
         cur.execute(query)
         cc += 1
         if cc % 10:
             con.commit()
 
     con.commit()
+
+    if save_to_file:
+        print("Saving predictions to file")
+        cur.execute("select g_id, s_id, pred, proba from predictions where model = '{}'".format(model))
+        with open("../data/predicted_{}.tsv".format(model), 'w') as w:
+            w.write("g_id\ts_id\tpred\tproba\n")
+            for row in cur.fetchall():
+                w.write("\t".join([str(r) for r in row]) + "\n")
+
     cur.close()
     con.close()
     print("==========End==========")
@@ -141,19 +90,19 @@ def similarity(attr, con, sims):
     if attr == 'dates':
         dateSimilarity(con.cursor(), con, sims)
     elif attr == 'desc_aboutme':
-        descAboutmeSimilarity(con.cursor(), con, sims)
+        descAboutmeSimilarity(con.cursor(), sims)
     elif attr == 'desc_comment':
-        descCommentSimilarity(con.cursor(), con, sims)
+        descCommentSimilarity(con.cursor(), sims)
     elif attr == 'locations':
-        locationSimilarity(con.cursor(), con, sims)
+        locationSimilarity(con.cursor(), sims)
     # elif attr == 'desc_pbody':
-    #     descPBodySimilarity(con.cursor(), con, sims)
+    #     descPBodySimilarity(con.cursor(), sims)
     # elif attr == 'desc_ptitle':
-    #     descPTitleSimilarity(con.cursor(), con, sims)
+    #     descPTitleSimilarity(con.cursor(), sims)
     # elif attr == 'desc_ptags':
-    #     descPTagsSimilarity(con.cursor(), con, sims)
+    #     descPTagsSimilarity(con.cursor(), sims)
     elif attr == 'user_names':
-        nameSimilarity(con.cursor(), con, sims)
+        nameSimilarity(con.cursor(), sims)
 
 
 ### Similarity computation on dates
@@ -170,7 +119,7 @@ def dateSimilarity(cur, con, sims):
 
 
 ### Similarity computation on names 
-def nameSimilarity(cur, con, sims):
+def nameSimilarity(cur, sims):
     cur.execute('''
 		select distinct g.name
 		from pairs l, users g
@@ -205,7 +154,7 @@ def nameSimilarity(cur, con, sims):
 
 
 ### Similarity computation between locations
-def locationSimilarity(cur, con, sims):
+def locationSimilarity(cur, sims):
     cur.execute('''
 		select l.g_id, u.location
 		from pairs l, users u
@@ -250,7 +199,7 @@ def locationSimilarity(cur, con, sims):
 
 
 ### Similarity computation between project descriptions and comments
-def descCommentSimilarity(cur, con, sims):
+def descCommentSimilarity(cur, sims):
     g_users = loadDescription(cur)
 
     ### Load user info of Stack Overflow
@@ -290,7 +239,7 @@ def descCommentSimilarity(cur, con, sims):
 
 
 ### Similarity computation between project descriptions and about me
-def descAboutmeSimilarity(cur, con, sims):
+def descAboutmeSimilarity(cur, sims):
     g_users = loadDescription(cur)
     ### Load user info of Stack Overflow
     cur.execute('''
@@ -343,7 +292,7 @@ def loadDescription(cur):
 
 
 ### NOT USED - Similarity computation between project descriptions and post bodies
-def descPBodySimilarity(cur, con, sims):
+def descPBodySimilarity(cur, sims):
     g_keys, g_values = loadDescription(cur)
 
     ### Load user info of Stack Overflow
@@ -377,7 +326,7 @@ def descPBodySimilarity(cur, con, sims):
 
 
 ### NOT USED - Similarity computation between project descriptions and post titles
-def descPTitleSimilarity(cur, con, sims):
+def descPTitleSimilarity(cur, sims):
     g_keys, g_values = loadDescription(cur)
 
     ### Load user info of Stack Overflow
@@ -411,7 +360,7 @@ def descPTitleSimilarity(cur, con, sims):
 
 
 ### NOT USED - Similarity computation between project descriptions and post tags
-def descPTagsSimilarity(cur, con, sims):
+def descPTagsSimilarity(cur, sims):
     g_keys, g_values = loadDescription(cur)
 
     ### Load user info of Stack Overflow
@@ -442,7 +391,3 @@ def descPTagsSimilarity(cur, con, sims):
     for p in pairs:
         sims['desc_ptags'][(p[0], p[1])] = 1 - sims_tmp[g_keys.index(p[0])][s_keys.index(p[1])]
     cur.close()
-
-
-if __name__ == "__main__":
-    main()
