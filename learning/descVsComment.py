@@ -6,10 +6,8 @@ from appUtils import getDbConfig, tfidfSimilarities, loadGithubProjectDescriptio
 
 def generateDescCommentSimilarity(redoSimilarity=False):
     print("\n===========\nRUNNING generateDescCommentSimilarity()\n===========\n")
-    cfg = getDbConfig()
-    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-    cur = con.cursor()
-
+    con, cur = getDbConfig()
+    
     # check if done before
     if redoSimilarity:
         cur.execute('delete from similarities_among_desc_comment')

@@ -9,10 +9,8 @@ from appUtils import getDbConfig
 
 def generateTagsSimilarity(redoSimilarity=False):
     print("\n===========\nRUNNING generateTagsSimilarity()\n===========\n")
-    cfg = getDbConfig()
-    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-    cur = con.cursor()
-
+    con, cur = getDbConfig()
+    
     # check if done before
     if redoSimilarity:
         cur.execute('delete from similarities_among_tags')

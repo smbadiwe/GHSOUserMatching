@@ -7,10 +7,8 @@ from appUtils import getDbConfig, genetate_params_for_tf_idf
 
 
 def main():
-    cfg = getDbConfig()
-    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-    cur = con.cursor()
-
+    con, cur = getDbConfig()
+    
     ### TF-IDF vectorizer
     tfidf = TfidfVectorizer(stop_words='english')
 

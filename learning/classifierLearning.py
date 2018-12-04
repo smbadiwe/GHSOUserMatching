@@ -15,10 +15,8 @@ def startLearning():
 	if not os.path.isdir("../models"):
 		os.makedirs("../models")
 
-	cfg = getDbConfig()
-	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-	cur = con.cursor()
-
+	con, cur = getDbConfig()
+	
 	### Preparing labels of pairs
 	print("Preparing labels of pairs")
 	cur.execute('''

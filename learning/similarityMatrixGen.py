@@ -8,10 +8,7 @@ from appUtils import getDbConfig
 
 def generateSimilarityMatrix(features):
 	print("\n===========\nRUNNING generateSimilarityMatrix()\n===========\n")
-	cfg = getDbConfig()
-	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-	cur = con.cursor()
-
+	con, cur = getDbConfig()
 	### Load pairs of GH users and SO users
 	cur.execute('''
 		select g_id, s_id

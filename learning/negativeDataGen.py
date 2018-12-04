@@ -7,10 +7,8 @@ from appUtils import getDbConfig
 def generateNegativeDataPairs(redo = False):
     print("\n===========\nRUNNING generateNegativeDataPairs()\n===========\n")
     ### Connect to database
-    cfg = getDbConfig()
-    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-    cur = con.cursor()
-
+    con, cur = getDbConfig()
+    
     cur.execute('''
     		create table if not exists negative_user_pairs
     			(gh_user_id int, so_user_id int)

@@ -53,9 +53,7 @@ def vectorizeNamesByTrigram(trigrams, name_trigrams):
             print("Iteration: {}. Name: {}".format(cnt, name))
         if cnt % 10000 == 0:
             print("Collecting GC at Iteration: {}. Name: {}".format(cnt, name))
-            # gc.collect()
         cnt += 1
-    # gc.collect()
     return vectors
 
 
@@ -64,7 +62,11 @@ def getDbConfig():
     file = os.path.join(os.path.dirname(__file__), "../config.yml")
     with open(file, 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
-    return cfg
+    
+	con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
+	cur = con.cursor()
+
+    return con, cur
 
 
 ### distance computation among vectors
@@ -145,7 +147,7 @@ class DbConnection(object):
 
     def create(self):
         print("Creating DbConnection")
-        cfg = getDbConfig()
+        con, cur = getDbConfig()
 
         # self.__con = psql.connect(database=cfg['database'], user=cfg['user'], host=cfg['host'], port=cfg['port'], password=cfg['password'])
         connStr = "dbname={} user={} password={} host={} port={}"\

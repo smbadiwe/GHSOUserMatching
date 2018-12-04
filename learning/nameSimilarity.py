@@ -9,10 +9,8 @@ from appUtils import getDbConfig, buildTrigram, vectorizeNamesByTrigram
 
 def generateNameSimilarity(redoSimilarity=False):
     print("\n===========\nRUNNING generateNameSimilarity()\n===========\n")
-    cfg = getDbConfig()
-    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-    cur = con.cursor()
-
+    con, cur = getDbConfig()
+    
     # check if done before
     if redoSimilarity:
         cur.execute('delete from similarities_among_user_names')

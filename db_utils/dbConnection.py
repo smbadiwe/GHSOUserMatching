@@ -22,7 +22,7 @@ class DbConnection(object):
 
     def create(self):
         print("Creating DbConnection")
-        cfg = getDbConfig()
+        con, cur = getDbConfig()
 
         # self.__con = psql.connect(database=cfg['database'], user=cfg['user'], host=cfg['host'], port=cfg['port'], password=cfg['password'])
         connStr = "dbname={} user={} password={} host={} port={}"\

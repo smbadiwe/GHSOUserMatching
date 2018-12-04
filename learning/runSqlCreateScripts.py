@@ -4,16 +4,8 @@ from appUtils import getDbConfig
 
 def runSqlScripts(train_size, test_size):
     print("\n===========\nRUNNING runSqlScripts()\n===========\n")
-    cfg = getDbConfig()
-    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-    cur = con.cursor()
-
-    print("Running createAllDatasetView.sql script")
-    with open("../sqlscripts/createAllDatasetView.sql", 'r') as r:
-        query = r.read()
-    cur.execute(query)
-    con.commit()
-
+    con, cur = getDbConfig()
+    
     print("Running createTables.sql script")
     with open("../sqlscripts/createTables.sql", 'r') as r:
         query = r.read()

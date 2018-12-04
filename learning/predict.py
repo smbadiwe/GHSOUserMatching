@@ -19,10 +19,8 @@ def makePrediction(model, features, n_samples, save_to_file=False):
     if not os.path.isdir("../models"):
         raise Exception("You need to run learning/learn.py first before running this file")
 
-    cfg = getDbConfig()
-    con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
-    cur = con.cursor()
-
+    con, cur = getDbConfig()
+    
     ### Candidate generation: test data
     print("Candidate generation: # test data = {}".format(n_samples))
 
