@@ -13,7 +13,7 @@ def get_model_path(model):
     return "../models/{}.pkl".format(model)
 
 
-def makePrediction(model, features, n_samples, redo, save_to_file=True):
+def makePrediction(model, features, n_samples, redo, save_to_file=False):
     print("\n===========\nRUNNING makePrediction()\n===========\n")
     print("model: {}. n_samples: {}. save_to_file: {}".format(model, n_samples, save_to_file))
     ### model selection

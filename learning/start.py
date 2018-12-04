@@ -105,7 +105,8 @@ if __name__ == "__main__":
     # Make predictions
     for model in models:
         start = timer()
-        makePrediction(model, features, prediction_size, redo)end = timer()
+        makePrediction(model, features, prediction_size, redo, save_to_file=False)
+        end = timer()
         elapsed = end - start
         total_time += elapsed
         print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
