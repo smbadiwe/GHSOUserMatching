@@ -5,11 +5,15 @@
 *.mysql
 *.psql
 *.mtx
+*.png
+*.pyc
 .idea/
 .vscode/
+with_tags
 DBs/
 data-orig/
 models/
+models_with_tags/
 **/__pycache__/
 __pycache__/
 msr14-mysql

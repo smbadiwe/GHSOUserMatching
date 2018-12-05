@@ -47,16 +47,16 @@ def generateDescAboutMeSimilarity(redoSimilarity = False):
 	good = 0
 	bad = 0
 	for p in pairs:
-		print("p[0]: {}, p[1]: {}".format(p[0], p[1]))
+		# print("p[0]: {}, p[1]: {}".format(p[0], p[1]))
 		g_ind = g_key_indices.get(p[0])
 		s_ind = s_key_indices.get(p[1])
 
 		if g_ind is not None and s_ind is not None:
 			distance = distances[g_ind][s_ind]
-			print("\t1-similarity_val: {}".format(1-distance))
+			# print("\t1-similarity_val: {}".format(1-distance))
 			good += 1
 		else:
-			print("\tg_ind: {}, s_ind: {}".format(g_ind, s_ind))
+			# print("\tg_ind: {}, s_ind: {}".format(g_ind, s_ind))
 			bad += 1
 			continue
 

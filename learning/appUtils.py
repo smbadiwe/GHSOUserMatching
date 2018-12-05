@@ -51,8 +51,6 @@ def vectorizeNamesByTrigram(trigrams, name_trigrams):
         vectors[name] = vec
         if cnt % 5000 == 0 or (cnt > 70000 and cnt % 1000 == 0):
             print("Iteration: {}. Name: {}".format(cnt, name))
-        if cnt % 10000 == 0:
-            print("Collecting GC at Iteration: {}. Name: {}".format(cnt, name))
         cnt += 1
     return vectors
 

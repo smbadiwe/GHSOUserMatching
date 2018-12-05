@@ -13,7 +13,7 @@ def get_model_path(model):
     return "../models/{}.pkl".format(model)
 
 
-def makePrediction(model, features, n_samples, redo, save_to_file=False):
+def makePrediction(model, features, n_samples, delete_old_data, save_to_file=False):
     print("\n===========\nRUNNING makePrediction()\n===========\n")
     print("model: {}. n_samples: {}. save_to_file: {}".format(model, n_samples, save_to_file))
     ### model selection
@@ -22,7 +22,7 @@ def makePrediction(model, features, n_samples, redo, save_to_file=False):
 
     con, cur = getDbConfig()
 
-    if redo:
+    if delete_old_data:
         cur.execute("delete from predictions where model = '{}'".format(model))
         con.commit()
 
@@ -65,7 +65,8 @@ def makePrediction(model, features, n_samples, redo, save_to_file=False):
     cc = 0
 
     for p in zip(pairs, scores):
-        pred = clf.classes_[0] if p[1][0] >= 0.5 else clf.classes_[1]
+        # pred = clf.classes_[0] if p[1][0] >= 0.5 else clf.classes_[1]
+        pred = clf.classes_[1] if p[1][1] > 0.5 else clf.classes_[0]
         proba = p[1][0] if pred == clf.classes_[0] else p[1][1]
         query = "insert into predictions values ({},{},'{}',{},{})".format(p[0][0], p[0][1], model, pred, proba)
         cur.execute(query)
@@ -85,7 +86,7 @@ def makePrediction(model, features, n_samples, redo, save_to_file=False):
 
     cur.close()
     con.close()
-    print("==========End==========")
+    print("==========End makePrediction() for model: {}==========".format(model))
 
 
 ### Similarity computation hub based on attributes
@@ -367,3 +368,22 @@ def descPTagsSimilarity(cur, sims):
     for p in cur.fetchall():
         sims['desc_ptags'][(p[0], p[1])] = 1 - sims_tmp[g_keys.index(p[0])][s_keys.index(p[1])]
     cur.close()
+
+
+def generatePredictionsCsvFile():
+    print("\n===========\nRUNNING generatePredictionsCsvFile()\n===========\n")
+
+    con, cur = getDbConfig()
+    cur.execute('''
+    SELECT p.g_id, p.s_id, l.label, p.model, p.pred, p.proba
+    FROM predictions p LEFT JOIN labeled_data_test l
+    ON p.g_id = l.g_id and p.s_id = l.s_id
+    ''')
+
+    with open('../data/predictions_all.csv', 'w') as w:
+        w.write("g_id,s_id,true_label,model,predicted_label,probability\n")
+        for row in cur.fetchall():
+            w.write(",".join([str(r) for r in row]) + "\n")
+
+    cur.close()
+    con.close()

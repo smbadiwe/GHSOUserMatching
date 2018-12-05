@@ -1,18 +1,11 @@
 # -*- coding: utf-8 -*-
-
-import psycopg2 as psql
 from appUtils import getDbConfig
 
 
-def generateNegativeDataPairs(redo = False):
+def generateNegativeDataPairs(redo=False):
     print("\n===========\nRUNNING generateNegativeDataPairs()\n===========\n")
     ### Connect to database
     con, cur = getDbConfig()
-    
-    cur.execute('''
-    		create table if not exists negative_user_pairs
-    			(gh_user_id int, so_user_id int)
-    	''')
 
     if redo:
         cur.execute('delete from negative_user_pairs')
@@ -24,6 +17,21 @@ def generateNegativeDataPairs(redo = False):
         if len(existing) > 0:
             print("negative_user_pairs has already been generated")
             return
+
+    # check if common_users table has been populated
+    print("check if gh_so_common_users table has been populated")
+    cur.execute('select gh_user_id from gh_so_common_users limit 1')
+    existing = [r[0] for r in cur.fetchall()]
+    if len(existing) == 0:
+        import csv
+        print("populate gh_so_common_users table")
+        with open("../data/common_users.csv", "r") as f:
+            reader = csv.reader(f)
+            values = ["({},{})".format(row[0], row[1]) for row in reader]
+        cur.execute('insert into gh_so_common_users (gh_user_id, so_user_id) values {}'
+                    .format(values))
+        con.commit()
+        print("gh_so_common_users table populated")
 
     print("Generating negative_user_pairs...")
 
@@ -83,4 +91,4 @@ def generateNegativeDataPairs(redo = False):
     print("Done generating negative_user_pairs.")
     cur.close()
     con.close()
-    print("========End=======")
+    print("========End generateNegativeDataPairs()=======")

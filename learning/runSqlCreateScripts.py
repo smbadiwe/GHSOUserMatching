@@ -1,4 +1,3 @@
-import psycopg2 as psql
 from appUtils import getDbConfig
 
 

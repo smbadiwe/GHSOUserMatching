@@ -1,3 +1,9 @@
+create table if not exists gh_so_common_users
+  (gh_user_id int, so_user_id int );
+
+create table if not exists negative_user_pairs
+  (gh_user_id int, so_user_id int );
+
 create table if not exists similarities_among_dates
   (g_id int, s_id int, similarity float8, primary key(g_id, s_id));
 
