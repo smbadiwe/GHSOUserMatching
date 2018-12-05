@@ -1,11 +1,7 @@
 # Predicting Whether a GitHub and Stack Overflow Account Belong to the same person
 
-This work is inspired by the ideas in [this paper by Takahiro Komamizu](http://dx.doi.org/10.18293/SEKE2017-109)
-
-
 ## Summary
 The sections below are only for those who need more detail. If you, like me, are in a hurry, simply run `learning\start.py` once you've setup your data in a postgresql database. In fact, you can simply study the code there and get the top-level implementation detail
-
 
 ## Data 
 
@@ -143,6 +139,9 @@ To migrate data from mysql to postgresql:
 			- data/predicted.tsv
 				- the predicted user pairs with probability
 
+
+## Acknowledgement
+This work is inspired by the ideas in [this paper by Takahiro Komamizu](http://dx.doi.org/10.18293/SEKE2017-109) [1]. We used [their code](https://github.com/Taka-Coma/PJD_GHSO) as starting point, but our final codebase is substantially different - and better (sshhh... don't say it loud!)
 
 ## Reference
 [1] Takahiro Komamizu, Yasuhiro Hayase, Toshiyuki Amagasa, Hiroyuki Kitagawa, 
