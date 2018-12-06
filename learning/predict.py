@@ -127,7 +127,7 @@ def tagsSimilarity(cur, con, sims):
     print("{} tags to be considered for our work are now loaded".format(len(tags)))
 
     # SO user tags
-    so_user_tags = getSOUserTags(cur, labeled_data_table)
+    so_user_tags = getSOUserTags(cur, tags, labeled_data_table)
     
     users_tags = []
     users_tags.extend(gh_user_tags.values())

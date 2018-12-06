@@ -32,7 +32,7 @@ def generateTagsSimilarity(cfg, redoSimilarity=False):
     print("{} tags to be considered for our work are now loaded".format(len(tags)))
 
     # SO user tags
-    so_user_tags = getSOUserTags(cur, "labeled_data")
+    so_user_tags = getSOUserTags(cur, tags, "labeled_data")
     
     users_tags = []
     users_tags.extend(gh_user_tags.values())
@@ -130,7 +130,7 @@ def getGHUserTags(cur, labeled_table_name):
     return gh_user_tags
 
 
-def getSOUserTags(cur, labeled_table_name):
+def getSOUserTags(cur, tags, labeled_table_name):
     so_user_tags = {}
     # cur.execute('''
     # select p.post_type_id, p.owner_user_id, p.last_editor_user_id, lower(p.tags)
