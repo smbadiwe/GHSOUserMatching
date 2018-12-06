@@ -3,8 +3,8 @@ user: postgres
 host: localhost
 port: 5432
 password: yourpasswordhere
-train_size: 10000 # number of train data samples
-test_size: 200 # number of test data samples
+train_size: 25000 # number of train data samples
+test_size: 5000 # number of test data samples
 features: [
         'dates',
         'desc_aboutme',
@@ -17,3 +17,4 @@ features: [
     ]
 models: ["rf", "gbdt", "knn", "lg"]
 rerun: True # if true, all data is deleted and regenerated
+doCharts: True  # if true, we generate charts after prediction

@@ -14,9 +14,9 @@ import os
 root_dir = os.path.join(os.path.dirname(__file__), "../")
 
 
-def startLearning(cfg):
+def startLearning(cfg, file_append):
 	print("\n===========\nRUNNING startLearning()\n===========\n")
-	model_dir = root_dir + "models"
+	model_dir = "{}models/{}".format(root_dir, file_append)
 	if not os.path.isdir(model_dir):
 		os.makedirs(model_dir)
 
@@ -37,7 +37,7 @@ def startLearning(cfg):
 
 	### Load similarity matrix
 	print("Load similarity matrix")
-	S = io.mmread(root_dir + 'data/s.mtx')
+	S = io.mmread(root_dir + 'data/s_{}.mtx'.format(file_append))
 	S = S.toarray()
 
 	### Learn linear regression classifier

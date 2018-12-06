@@ -15,20 +15,14 @@ import os
 import yaml
 
 
-if __name__ == "__main__":
-    file = os.path.join(os.path.dirname(__file__), "../config.yml")
-    with open(file, 'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
-
-    rerun = bool(cfg["rerun"])  # if true, all data is deleted and regenerated
-    train_size = int(cfg["train_size"])  # number of train data samples
-    prediction_size = int(cfg["test_size"])   # number of test data samples
-    models = cfg["models"]
-    features = cfg["features"]
-    print("Config file loaded.\nrerun: {}\nfeatures: {}.\nmodels: {}\ntrain_size: {}, test_size: {}".format(rerun, features, models, train_size, prediction_size))
-
+def preProcess(cfg):
     total_time = 0
     # --- data pre-processing ---
+    rerun = bool(cfg["rerun"])  # if true, all data is deleted and regenerated
+    features = cfg["features"]
+    train_size = int(cfg["train_size"])  # number of train data samples
+    prediction_size = int(cfg["test_size"])  # number of test data samples
+
     start = timer()
     runSqlScripts(cfg, train_size, prediction_size)
     end = timer()
@@ -97,30 +91,44 @@ if __name__ == "__main__":
     elapsed = end - start
     total_time += elapsed
     print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
-
     # --- end data pre-processing ---
+    return total_time
 
-    start = timer()
-    startLearning(cfg)
-    end = timer()
-    elapsed = end - start
-    total_time += elapsed
-    print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
 
-    # Make predictions
+def generateCharts(models, prediction_size, total_time, file_append):
+    # generate charts and save to file
+    for model in models:
+        start = timer()
+        try:
+            data = getData(model, prediction_size, file_append)
+            plotConfusionMatrix(data, model, file_append)
+            plotRocCurve(data, model, file_append)
+        except Exception as ex:
+            print("Failure generating plots for {} model.\n{}\n".format(model, ex))
+        end = timer()
+        elapsed = end - start
+        total_time += elapsed
+        print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
+    return total_time
+
+
+def testModels(cfg, features, total_time):
+    file_append = "with_tags" if "tags" in features else "without_tags"
+    print("making predictions - {}".format(file_append))
+    models = cfg["models"]
+    prediction_size = int(cfg["test_size"])  # number of test data samples
     for model in models:
         start = timer()
         try:
             makePrediction(cfg, model, features, prediction_size, delete_old_data=True, save_to_file=False)
         except Exception as ex:
-            print("Failure making prediction using {} model.\n{}\n".format(model, ex))
+            print("Failure making prediction {} using {} model.\n{}\n".format(file_append, model, ex))
         end = timer()
         elapsed = end - start
         total_time += elapsed
         print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
 
     # generate the predictions as CSV file for analyses
-
     start = timer()
     generatePredictionsCsvFile(cfg)
     end = timer()
@@ -128,19 +136,55 @@ if __name__ == "__main__":
     total_time += elapsed
     print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
 
-    # generate charts and save to file
+    do_charts = bool(cfg["doCharts"])
+    if do_charts:
+        # Generate charts
+        total_time = generateCharts(models, prediction_size, total_time, file_append)
 
-    for model in models:
-        start = timer()
-        try:
-            data = getData(model, prediction_size)
-            plotConfusionMatrix(data, model)
-            plotRocCurve(data, model)
-        except Exception as ex:
-            print("Failure generating plots for {} model.\n{}\n".format(model, ex))
-        end = timer()
-        elapsed = end - start
-        total_time += elapsed
-        print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
+    return total_time
 
-    print("Total time taken: {} seconds\n=== ALL DONE!===".format(total_time))
+
+def learnAndPredict(cfg, features, total_time):
+    file_append = "with_tags" if "tags" in features else "without_tags"
+
+    # train
+    start = timer()
+    startLearning(cfg, file_append)
+    end = timer()
+    elapsed = end - start
+    total_time += elapsed
+    print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
+
+    # Make predictions
+    total_time = testModels(cfg, features, total_time)
+    
+    return total_time
+
+
+if __name__ == "__main__":
+    root = os.path.join(os.path.dirname(__file__), "../")
+    with open(root + "config.yml", 'r') as ymlfile:
+        cfg = yaml.load(ymlfile)
+
+    rerun = bool(cfg["rerun"])  # if true, all data is deleted and regenerated
+    models = cfg["models"]
+    features = cfg["features"]
+    train_size = int(cfg["train_size"])  # number of train data samples
+    prediction_size = int(cfg["test_size"])  # number of test data samples
+    print("Config file loaded.\nrerun: {}\nfeatures: {}.\nmodels: {}\ntrain_size: {}, test_size: {}"
+          .format(rerun, features, models, train_size, prediction_size))
+
+    # pre-process
+    total_time = preProcess(cfg)
+
+    # train, learn and predict
+
+    # with tags
+    total_time = learnAndPredict(cfg, features, total_time)
+    
+    if "tags" in features:
+        # without tags
+        features = features.remove("tags")
+        total_time = learnAndPredict(cfg, features, total_time)
+
+    print("Total time taken: {} seconds\nAll generated files are in '{}' folder\n\n=== ALL DONE!===".format(total_time, root + "data"))
