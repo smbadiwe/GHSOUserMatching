@@ -1,5 +1,4 @@
 import psycopg2 as psql
-import yaml
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -55,11 +54,7 @@ def vectorizeNamesByTrigram(trigrams, name_trigrams):
     return vectors
 
 
-def getDbConfig():
-    import os
-    file = os.path.join(os.path.dirname(__file__), "../config.yml")
-    with open(file, 'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
+def getDbConnection(cfg):
     con = psql.connect(host=cfg["host"], user=cfg["user"], database=cfg["database"], password=cfg["password"])
     cur = con.cursor()
 
@@ -144,7 +139,7 @@ class DbConnection(object):
 
     def create(self):
         print("Creating DbConnection")
-        con, cur = getDbConfig()
+        con, cur = getDbConnection(cfg)
 
         # self.__con = psql.connect(database=cfg['database'], user=cfg['user'], host=cfg['host'], port=cfg['port'], password=cfg['password'])
         connStr = "dbname={} user={} password={} host={} port={}"\

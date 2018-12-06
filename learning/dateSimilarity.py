@@ -1,10 +1,10 @@
 import psycopg2 as psql
-from appUtils import getDbConfig, computeDateSim
+from appUtils import getDbConnection, computeDateSim
 
 
-def generateDateSimilarity(redoSimilarity = False):
+def generateDateSimilarity(cfg, redoSimilarity = False):
     print("\n===========\nRUNNING generateDateSimilarity()\n===========\n")
-    con, cur = getDbConfig()
+    con, cur = getDbConnection(cfg)
     
     # check if done before
     if redoSimilarity:

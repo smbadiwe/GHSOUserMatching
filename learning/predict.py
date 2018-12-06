@@ -6,21 +6,24 @@ import math
 import os
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from appUtils import getDbConfig, computeDateSim, buildTrigram, vectorizeNamesByTrigram, tfidfSimilarities, loadGithubProjectDescription
+from appUtils import getDbConnection, computeDateSim, buildTrigram, vectorizeNamesByTrigram, tfidfSimilarities, loadGithubProjectDescription
+
+
+root_dir = os.path.join(os.path.dirname(__file__), "../")
 
 
 def get_model_path(model):
-    return "../models/{}.pkl".format(model)
+    return root_dir + "models/{}.pkl".format(model)
 
 
-def makePrediction(model, features, n_samples, delete_old_data, save_to_file=False):
+def makePrediction(cfg, model, features, n_samples, delete_old_data, save_to_file=False):
     print("\n===========\nRUNNING makePrediction()\n===========\n")
     print("model: {}. n_samples: {}. save_to_file: {}".format(model, n_samples, save_to_file))
     ### model selection
-    if not os.path.isdir("../models"):
+    if not os.path.isdir(root_dir + "models"):
         raise Exception("You need to run learning/learn.py first before running this file")
 
-    con, cur = getDbConfig()
+    con, cur = getDbConnection(cfg)
 
     if delete_old_data:
         cur.execute("delete from predictions where model = '{}'".format(model))
@@ -79,7 +82,7 @@ def makePrediction(model, features, n_samples, delete_old_data, save_to_file=Fal
     if save_to_file:
         print("Saving predictions to file")
         cur.execute("select g_id, s_id, pred, proba from predictions where model = '{}'".format(model))
-        with open("../data/predicted_{}.tsv".format(model), 'w') as w:
+        with open(root_dir + "data/predicted_{}.tsv".format(model), 'w') as w:
             w.write("g_id\ts_id\tpred\tproba\n")
             for row in cur.fetchall():
                 w.write("\t".join([str(r) for r in row]) + "\n")
@@ -99,6 +102,8 @@ def similarity(attr, con, sims):
         descCommentSimilarity(con.cursor(), sims)
     elif attr == 'locations':
         locationSimilarity(con.cursor(), sims)
+    elif attr == 'tags':
+        tagsSimilarity(con.cursor(), sims)
     # elif attr == 'desc_pbody':
     #     descPBodySimilarity(con.cursor(), sims)
     # elif attr == 'desc_ptitle':
@@ -107,6 +112,59 @@ def similarity(attr, con, sims):
     #     descPTagsSimilarity(con.cursor(), sims)
     elif attr == 'user_names':
         nameSimilarity(con.cursor(), sims)
+
+
+### Similarity computation on dates
+def tagsSimilarity(cur, con, sims):
+    from tagsSimilarity import getGHUserTags, getSOUserTags
+
+    labeled_data_table = "labeled_data_test"
+    # GH user tags
+    gh_user_tags = getGHUserTags(cur, labeled_data_table)
+
+    cur.execute('select distinct lower(language) from projects where language is not null')
+    tags = set([r[0] for r in cur.fetchall()])
+    print("{} tags to be considered for our work are now loaded".format(len(tags)))
+
+    # SO user tags
+    so_user_tags = getSOUserTags(cur, labeled_data_table)
+    
+    users_tags = []
+    users_tags.extend(gh_user_tags.values())
+    users_tags.extend(so_user_tags.values())
+    print("Combined tags list. Total: {} (with duplicates)".format(len(users_tags)))
+
+    name_trigrams, trigrams = buildTrigram(set(users_tags))
+
+    vectors = vectorizeNamesByTrigram(trigrams, name_trigrams)
+    # print("\nvectors")
+    # print(vectors)
+
+    print("\nConstructed vectors for vectorizing tag-list by trigram. length of vectors dict: {}".format(len(vectors)))
+    # similarities between tags
+    n_errors = 0
+    len_trigrams = len(trigrams)
+    cur.execute('select distinct g_id, s_id from {}'.format(labeled_data_table))
+    for p in cur.fetchall():
+        try:
+            gv_key = gh_user_tags.get(p[0])
+            if gv_key is not None:
+                gv = np.array(vectors[gv_key]).reshape(1, -1)
+            else:
+                gv = np.array([0] * len_trigrams).reshape(1, -1)
+            sv_key = so_user_tags.get(p[1])
+            if sv_key is not None:
+                sv = np.array(vectors[sv_key]).reshape(1, -1)
+            else:
+                sv = np.array([0] * len_trigrams).reshape(1, -1)
+        except Exception as ex:
+            n_errors += 1
+            print("\tError: {}".format(ex))
+            continue
+
+        sim = cosine_similarity(gv, sv)
+        sims['tags'][(p[0], p[1])] = sim[0][0]
+
 
 
 ### Similarity computation on dates
@@ -146,7 +204,8 @@ def nameSimilarity(cur, sims):
         except:
             continue
 
-        sims['user_names'][(p[0], p[1])] = cosine_similarity(gv, sv)
+        sim = cosine_similarity(gv, sv)
+        sims['user_names'][(p[0], p[1])] = sim[0][0]
     cur.close()
 
 
@@ -370,17 +429,17 @@ def descPTagsSimilarity(cur, sims):
     cur.close()
 
 
-def generatePredictionsCsvFile():
+def generatePredictionsCsvFile(cfg):
     print("\n===========\nRUNNING generatePredictionsCsvFile()\n===========\n")
 
-    con, cur = getDbConfig()
+    con, cur = getDbConnection(cfg)
     cur.execute('''
     SELECT p.g_id, p.s_id, l.label, p.model, p.pred, p.proba
     FROM predictions p LEFT JOIN labeled_data_test l
     ON p.g_id = l.g_id and p.s_id = l.s_id
     ''')
 
-    with open('../data/predictions_all.csv', 'w') as w:
+    with open(root_dir + 'data/predictions_all.csv', 'w') as w:
         w.write("g_id,s_id,true_label,model,predicted_label,probability\n")
         for row in cur.fetchall():
             w.write(",".join([str(r) for r in row]) + "\n")

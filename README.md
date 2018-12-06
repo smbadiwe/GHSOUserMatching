@@ -1,7 +1,11 @@
 # Predicting Whether a GitHub and Stack Overflow Account Belong to the same person
 
 ## Summary
-The sections below are only for those who need more detail. If you, like me, are in a hurry, simply run `learning\start.py` once you've setup your data in a postgresql database. In fact, you can simply study the code there and get the top-level implementation detail
+The sections below are only for those who need more detail. If you, like me, are in a hurry, simply do the following: 
+* Setup your data in a postgresql database (See [the section on Data](#Data)). 
+* Make a copy of `config.example.yml` and rename the copy to `config.yml`
+* Edit `config.yml`, specifying the correct values for you database and the other settings.
+* Run `learning\start.py`. In fact, you can simply study the code there and get the top-level implementation detail.
 
 ## Data 
 

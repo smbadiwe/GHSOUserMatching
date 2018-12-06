@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
-from appUtils import getDbConfig, tfidfSimilarities, loadGithubProjectDescription
+from appUtils import getDbConnection, tfidfSimilarities, loadGithubProjectDescription
 
 
-def generateDescCommentSimilarity(redoSimilarity=False):
+def generateDescCommentSimilarity(cfg, redoSimilarity=False):
     print("\n===========\nRUNNING generateDescCommentSimilarity()\n===========\n")
-    con, cur = getDbConfig()
+    con, cur = getDbConnection(cfg)
     
     # check if done before
     if redoSimilarity:

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psql
-from appUtils import getDbConfig, tfidfSimilarities, loadGithubProjectDescription
+from appUtils import getDbConnection, tfidfSimilarities, loadGithubProjectDescription
 
 
-def generateDescAboutMeSimilarity(redoSimilarity = False):
+def generateDescAboutMeSimilarity(cfg, redoSimilarity = False):
 	print("\n===========\nRUNNING generateDescAboutMeSimilarity()\n===========\n")
-	con, cur = getDbConfig()
+	con, cur = getDbConnection(cfg)
 	# check if done before
 	if redoSimilarity:
 		cur.execute('delete from similarities_among_desc_aboutme')

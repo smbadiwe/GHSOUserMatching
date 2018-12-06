@@ -3,3 +3,17 @@ user: postgres
 host: localhost
 port: 5432
 password: yourpasswordhere
+train_size: 10000 # number of train data samples
+test_size: 200 # number of test data samples
+features: [
+        'dates',
+        'desc_aboutme',
+        'desc_comment',
+        # 'desc_pbody',
+        # 'desc_ptitle',
+        'locations',
+        'tags',
+        'user_names'
+    ]
+models: ["rf", "gbdt", "knn", "lg"]
+rerun: True # if true, all data is deleted and regenerated

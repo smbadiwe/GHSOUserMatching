@@ -4,12 +4,12 @@ import psycopg2 as psql
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 # import gc
-from appUtils import getDbConfig, buildTrigram, vectorizeNamesByTrigram
+from appUtils import getDbConnection, buildTrigram, vectorizeNamesByTrigram
 
 
-def generateNameSimilarity(redoSimilarity=False):
+def generateNameSimilarity(cfg, redoSimilarity=False):
     print("\n===========\nRUNNING generateNameSimilarity()\n===========\n")
-    con, cur = getDbConfig()
+    con, cur = getDbConnection(cfg)
     
     # check if done before
     if redoSimilarity:

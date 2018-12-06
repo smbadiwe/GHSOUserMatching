@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2 as psql
-from appUtils import getDbConfig, tfidfSimilarities
+from appUtils import getDbConnection, tfidfSimilarities
 
 
-def generateLocationSimilarity(redoSimilarity=False):
+def generateLocationSimilarity(cfg, redoSimilarity=False):
     print("\n===========\nRUNNING generateLocationSimilarity()\n===========\n")
-    con, cur = getDbConfig()
+    con, cur = getDbConnection(cfg)
     
     # check if done before
     if redoSimilarity:

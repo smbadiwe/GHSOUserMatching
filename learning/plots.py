@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import scikitplot as skplt
 import csv
 import numpy as np
+import os
+
+
+root_dir = os.path.join(os.path.dirname(__file__), "../")
 
 
 def getData(model, n_samples):
@@ -15,7 +19,7 @@ def getData(model, n_samples):
     }
     i = -1
     j = 0
-    with open('../data/predictions_all.csv', 'r') as f:
+    with open(root_dir + "data/predictions_all.csv", 'r') as f:
         reader = csv.reader(f)
         for row in reader:
             i += 1
@@ -46,7 +50,7 @@ def plotConfusionMatrix(data, model):
     print("Generating Confusion Matrix for {}".format(model))
     skplt.metrics.plot_confusion_matrix(data["true_label"], data["predicted_label"],
                                         labels=[0,1], title="Confusion Matrix - {}".format(model))
-    plt.savefig("../data/confusion_matrix_{}.png".format(model))
+    plt.savefig(root_dir + "data/confusion_matrix_{}.png".format(model))
     print("Confusion Matrix for {} generated and saved to file".format(model))
 
 
@@ -54,5 +58,5 @@ def plotRocCurve(data, model):
     print("Generating ROC Curve for {}".format(model))
     skplt.metrics.plot_roc(data["true_label"], getProba(data),
                            title="ROC Curve - {}".format(model))
-    plt.savefig("../data/roc_curve_{}.png".format(model))
+    plt.savefig(root_dir + "data/roc_curve_{}.png".format(model))
     print("ROC Curve for {} generated and saved to file".format(model))

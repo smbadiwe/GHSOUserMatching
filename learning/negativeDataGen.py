@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-from appUtils import getDbConfig
+from appUtils import getDbConnection
 
 
-def generateNegativeDataPairs(redo=False):
+def generateNegativeDataPairs(cfg, redo=False):
     print("\n===========\nRUNNING generateNegativeDataPairs()\n===========\n")
     ### Connect to database
-    con, cur = getDbConfig()
+    con, cur = getDbConnection(cfg)
 
     if redo:
         cur.execute('delete from negative_user_pairs')
@@ -24,10 +24,14 @@ def generateNegativeDataPairs(redo=False):
     existing = [r[0] for r in cur.fetchall()]
     if len(existing) == 0:
         import csv
+        import os
         print("populate gh_so_common_users table")
-        with open("../data/common_users.csv", "r") as f:
+        root_dir = os.path.join(os.path.dirname(__file__), "../")
+
+        with open(root_dir + "data/common_users.csv", "r") as f:
             reader = csv.reader(f)
             values = ["({},{})".format(row[0], row[1]) for row in reader]
+
         cur.execute('insert into gh_so_common_users (gh_user_id, so_user_id) values {}'
                     .format(values))
         con.commit()

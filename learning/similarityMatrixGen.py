@@ -3,12 +3,12 @@
 import psycopg2 as psql
 from scipy.sparse import lil_matrix
 from scipy import io
-from appUtils import getDbConfig
+from appUtils import getDbConnection
+import os
 
-
-def generateSimilarityMatrix(features):
+def generateSimilarityMatrix(cfg, features):
 	print("\n===========\nRUNNING generateSimilarityMatrix()\n===========\n")
-	con, cur = getDbConfig()
+	con, cur = getDbConnection(cfg)
 	### Load pairs of GH users and SO users
 	cur.execute('''
 		select g_id, s_id
@@ -30,7 +30,8 @@ def generateSimilarityMatrix(features):
 				S[pairs.index((c[0], c[1])), features.index(attr)] = c[2]
 
 	print("Writing similarity matrix to file")
-	io.mmwrite('../data/s.mtx', S)
+	root_dir = os.path.join(os.path.dirname(__file__), "../")
+	io.mmwrite(root_dir + 'data/s.mtx', S)
 
 	print("Closing connection")
 	cur.close()

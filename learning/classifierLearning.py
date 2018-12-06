@@ -6,16 +6,21 @@ from scipy import io
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from appUtils import getDbConfig
+from appUtils import getDbConnection
 from sklearn.externals import joblib
 import os
 
-def startLearning():
-	print("\n===========\nRUNNING startLearning()\n===========\n")
-	if not os.path.isdir("../models"):
-		os.makedirs("../models")
 
-	con, cur = getDbConfig()
+root_dir = os.path.join(os.path.dirname(__file__), "../")
+
+
+def startLearning(cfg):
+	print("\n===========\nRUNNING startLearning()\n===========\n")
+	model_dir = root_dir + "models"
+	if not os.path.isdir(model_dir):
+		os.makedirs(model_dir)
+
+	con, cur = getDbConnection(cfg)
 	
 	### Preparing labels of pairs
 	print("Preparing labels of pairs")
@@ -32,38 +37,38 @@ def startLearning():
 
 	### Load similarity matrix
 	print("Load similarity matrix")
-	S = io.mmread('../data/s.mtx')
+	S = io.mmread(root_dir + 'data/s.mtx')
 	S = S.toarray()
 
 	### Learn linear regression classifier
 	print("Learn linear regression classifier")
 	clf = LinearRegression()
 	clf.fit(S, labels)
-	joblib.dump(clf, '../models/lr.pkl')
+	joblib.dump(clf, model_dir + '/lr.pkl')
 
 	### Learn kNN classifier
 	print("Learn kNN classifier")
 	clf = KNeighborsClassifier()
 	clf.fit(S, labels)
-	joblib.dump(clf, '../models/knn.pkl')
+	joblib.dump(clf, model_dir + '/knn.pkl')
 
 	### Learn logistic regression classifier
 	print("Learn logistic regression classifier")
 	clf = LogisticRegression()
 	clf.fit(S, labels)
-	joblib.dump(clf, '../models/lg.pkl')
+	joblib.dump(clf, model_dir + '/lg.pkl')
 
 	### Learn random forest classifier
 	print("Learn random forest classifier")
 	clf = RandomForestClassifier(n_estimators=100)
 	clf.fit(S, labels)
-	joblib.dump(clf, '../models/rf.pkl')
+	joblib.dump(clf, model_dir + '/rf.pkl')
 
 	### Learn gradient boosting decision tree classifier
 	print("Learn gradient boosting decision tree classifier")
 	clf = GradientBoostingClassifier(n_estimators=100)
 	clf.fit(S, labels)
-	joblib.dump(clf, '../models/gbdt.pkl')
+	joblib.dump(clf, model_dir + '/gbdt.pkl')
 
 	cur.close()
 	con.close()
@@ -71,14 +76,16 @@ def startLearning():
 	try:
 		print("\nDone. Now zip the models")
 		import zipfile
-		with zipfile.ZipFile("../models.zip", "w", zipfile.ZIP_DEFLATED) as zf:
-			abs_src = os.path.abspath("../models")
-			for dirname, subdirs, files in os.walk("../models"):
+		with zipfile.ZipFile(model_dir + "models.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+			abs_src = os.path.abspath(model_dir)
+			for dirname, subdirs, files in os.walk(model_dir):
 				for filename in files:
 					absname = os.path.abspath(os.path.join(dirname, filename))
 					arcname = absname[len(abs_src) + 1:]
 					print('zipping %s as %s' % (os.path.join(dirname, filename), arcname))
 					zf.write(absname, arcname)
-	except:
-		pass
+	except Exception as ex:
+		print(ex)
+		print("That was error zipping file. Continuing...")
+		
 	print("===========End startLearning()============")
