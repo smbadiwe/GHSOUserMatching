@@ -76,7 +76,7 @@ def startLearning(cfg, file_append):
 	try:
 		print("\nDone. Now zip the models")
 		import zipfile
-		with zipfile.ZipFile(model_dir + "models.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+		with zipfile.ZipFile(model_dir + "_models.zip", "w", zipfile.ZIP_DEFLATED) as zf:
 			abs_src = os.path.abspath(model_dir)
 			for dirname, subdirs, files in os.walk(model_dir):
 				for filename in files:

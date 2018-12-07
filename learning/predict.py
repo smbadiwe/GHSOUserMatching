@@ -12,13 +12,17 @@ from appUtils import getDbConnection, computeDateSim, buildTrigram, vectorizeNam
 root_dir = os.path.join(os.path.dirname(__file__), "../")
 
 
-def get_model_path(model):
-    return root_dir + "models/{}.pkl".format(model)
+def get_model_path(model, file_append):
+    return root_dir + "models/{}/{}.pkl".format(file_append, model)
 
 
-def makePrediction(cfg, model, features, n_samples, delete_old_data, save_to_file=False):
+def makePrediction(cfg, model, features, n_samples, file_append=None, delete_old_data=True, save_to_file=False):
     print("\n===========\nRUNNING makePrediction()\n===========\n")
     print("model: {}. n_samples: {}. save_to_file: {}".format(model, n_samples, save_to_file))
+
+    if file_append is None:
+        file_append = "with_tags" if "tags" in features else "without_tags"
+
     ### model selection
     if not os.path.isdir(root_dir + "models"):
         raise Exception("You need to run learning/learn.py first before running this file")
@@ -62,7 +66,7 @@ def makePrediction(cfg, model, features, n_samples, delete_old_data, save_to_fil
 
     print("Load and predict")
 
-    clf = joblib.load(get_model_path(model))
+    clf = joblib.load(get_model_path(model, file_append))
     scores = clf.predict_proba(S)
     print("Done. scores - shape: {}. Classes: {}".format(scores.shape, clf.classes_))
     cc = 0
@@ -82,7 +86,7 @@ def makePrediction(cfg, model, features, n_samples, delete_old_data, save_to_fil
     if save_to_file:
         print("Saving predictions to file")
         cur.execute("select g_id, s_id, pred, proba from predictions where model = '{}'".format(model))
-        with open(root_dir + "data/predicted_{}.tsv".format(model), 'w') as w:
+        with open(root_dir + "data/{}/predicted_{}.tsv".format(file_append, model), 'w') as w:
             w.write("g_id\ts_id\tpred\tproba\n")
             for row in cur.fetchall():
                 w.write("\t".join([str(r) for r in row]) + "\n")
@@ -164,7 +168,6 @@ def tagsSimilarity(cur, con, sims):
 
         sim = cosine_similarity(gv, sv)
         sims['tags'][(p[0], p[1])] = sim[0][0]
-
 
 
 ### Similarity computation on dates
@@ -429,7 +432,7 @@ def descPTagsSimilarity(cur, sims):
     cur.close()
 
 
-def generatePredictionsCsvFile(cfg):
+def generatePredictionsCsvFile(cfg, file_append):
     print("\n===========\nRUNNING generatePredictionsCsvFile()\n===========\n")
 
     con, cur = getDbConnection(cfg)
@@ -439,7 +442,7 @@ def generatePredictionsCsvFile(cfg):
     ON p.g_id = l.g_id and p.s_id = l.s_id
     ''')
 
-    with open(root_dir + 'data/predictions_all.csv', 'w') as w:
+    with open(root_dir + 'data/{}/predictions_all.csv'.format(file_append), 'w') as w:
         w.write("g_id,s_id,true_label,model,predicted_label,probability\n")
         for row in cur.fetchall():
             w.write(",".join([str(r) for r in row]) + "\n")

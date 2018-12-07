@@ -19,7 +19,7 @@ def getData(model, n_samples, file_append):
     }
     i = -1
     j = 0
-    with open(root_dir + "data/predictions_all_{}.csv".format(file_append), 'r') as f:
+    with open(root_dir + "data/{}/predictions_all.csv".format(file_append), 'r') as f:
         reader = csv.reader(f)
         for row in reader:
             i += 1
@@ -50,7 +50,7 @@ def plotConfusionMatrix(data, model, file_append):
     print("Generating Confusion Matrix for {} ({})".format(model, file_append))
     skplt.metrics.plot_confusion_matrix(data["true_label"], data["predicted_label"],
                                         labels=[0,1], title="Confusion Matrix - {} ({})".format(model, file_append))
-    plt.savefig(root_dir + "data/confusion_matrix_{}_{}.png".format(model, file_append))
+    plt.savefig(root_dir + "data/{}/confusion_matrix_{}.png".format(file_append, model))
     print("Confusion Matrix for {} ({}) generated and saved to file".format(model, file_append))
 
 
@@ -58,5 +58,5 @@ def plotRocCurve(data, model, file_append):
     print("Generating ROC Curve for {} ({})".format(model, file_append))
     skplt.metrics.plot_roc(data["true_label"], getProba(data),
                            title="ROC Curve - {} ({})".format(model, file_append))
-    plt.savefig(root_dir + "data/roc_curve_{}_{}.png".format(model, file_append))
+    plt.savefig(root_dir + "data/{}/roc_curve_{}.png".format(file_append, model))
     print("ROC Curve for {} ({}) generated and saved to file".format(model, file_append))

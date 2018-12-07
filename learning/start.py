@@ -85,12 +85,6 @@ def preProcess(cfg):
         total_time += elapsed
         print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
 
-    start = timer()
-    generateSimilarityMatrix(cfg, features)
-    end = timer()
-    elapsed = end - start
-    total_time += elapsed
-    print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
     # --- end data pre-processing ---
     return total_time
 
@@ -120,7 +114,7 @@ def testModels(cfg, features, total_time):
     for model in models:
         start = timer()
         try:
-            makePrediction(cfg, model, features, prediction_size, delete_old_data=True, save_to_file=False)
+            makePrediction(cfg, model, features, prediction_size, file_append, delete_old_data=True, save_to_file=False)
         except Exception as ex:
             print("Failure making prediction {} using {} model.\n{}\n".format(file_append, model, ex))
         end = timer()
@@ -130,7 +124,7 @@ def testModels(cfg, features, total_time):
 
     # generate the predictions as CSV file for analyses
     start = timer()
-    generatePredictionsCsvFile(cfg)
+    generatePredictionsCsvFile(cfg, file_append)
     end = timer()
     elapsed = end - start
     total_time += elapsed
@@ -146,6 +140,13 @@ def testModels(cfg, features, total_time):
 
 def learnAndPredict(cfg, features, total_time):
     file_append = "with_tags" if "tags" in features else "without_tags"
+
+    start = timer()
+    generateSimilarityMatrix(cfg, features)
+    end = timer()
+    elapsed = end - start
+    total_time += elapsed
+    print("Time taken: {}. Total Time Taken: {}".format(elapsed, total_time))
 
     # train
     start = timer()
@@ -173,9 +174,10 @@ if __name__ == "__main__":
     prediction_size = int(cfg["test_size"])  # number of test data samples
     print("Config file loaded.\nrerun: {}\nfeatures: {}.\nmodels: {}\ntrain_size: {}, test_size: {}"
           .format(rerun, features, models, train_size, prediction_size))
+    total_time = 0
 
     # pre-process
-    total_time = preProcess(cfg)
+    # total_time = preProcess(cfg)
 
     # train, learn and predict
 
@@ -185,6 +187,7 @@ if __name__ == "__main__":
     if "tags" in features:
         # without tags
         features = features.remove("tags")
+        print("\n=======Rerunning WITHOUT tags============\n")
         total_time = learnAndPredict(cfg, features, total_time)
 
     print("Total time taken: {} seconds\nAll generated files are in '{}' folder\n\n=== ALL DONE!===".format(total_time, root + "data"))

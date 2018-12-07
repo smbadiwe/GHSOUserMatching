@@ -19,8 +19,11 @@ def generateSimilarityMatrix(cfg, features):
 
 	### Matrix generation
 	S = lil_matrix((len(pairs), len(features)))
+	with_tags = False
 	for attr in features:
 		print("Processing {} similarity".format(attr))
+		if attr == "tags":
+			with_tags = True
 		cur.execute('''
 			select g_id, s_id, similarity
 			from similarities_among_%s
@@ -29,9 +32,10 @@ def generateSimilarityMatrix(cfg, features):
 			if (c[0], c[1]) in pairs:
 				S[pairs.index((c[0], c[1])), features.index(attr)] = c[2]
 
+	file_append = "with_tags" if with_tags else "without_tags"
 	print("Writing similarity matrix to file")
 	root_dir = os.path.join(os.path.dirname(__file__), "../")
-	io.mmwrite(root_dir + 'data/s.mtx', S)
+	io.mmwrite(root_dir + 'data/s_{}.mtx'.format(file_append), S)
 
 	print("Closing connection")
 	cur.close()
