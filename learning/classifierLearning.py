@@ -37,7 +37,7 @@ def startLearning(cfg, file_append):
 
 	### Load similarity matrix
 	print("Load similarity matrix")
-	S = io.mmread(root_dir + 'data/s_{}.mtx'.format(file_append))
+	S = io.mmread(root_dir + 'data/{}.s.mtx'.format(file_append))
 	S = S.toarray()
 
 	### Learn linear regression classifier
@@ -73,19 +73,20 @@ def startLearning(cfg, file_append):
 	cur.close()
 	con.close()
 
-	try:
-		print("\nDone. Now zip the models")
-		import zipfile
-		with zipfile.ZipFile(model_dir + "_models.zip", "w", zipfile.ZIP_DEFLATED) as zf:
-			abs_src = os.path.abspath(model_dir)
-			for dirname, subdirs, files in os.walk(model_dir):
-				for filename in files:
-					absname = os.path.abspath(os.path.join(dirname, filename))
-					arcname = absname[len(abs_src) + 1:]
-					print('zipping %s as %s' % (os.path.join(dirname, filename), arcname))
-					zf.write(absname, arcname)
-	except Exception as ex:
-		print(ex)
-		print("That was error zipping file. Continuing...")
+	if bool(cfg["zipModel"]):
+		try:
+			print("\nDone. Now zip the models")
+			import zipfile
+			with zipfile.ZipFile(model_dir + "_models.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+				abs_src = os.path.abspath(model_dir)
+				for dirname, subdirs, files in os.walk(model_dir):
+					for filename in files:
+						absname = os.path.abspath(os.path.join(dirname, filename))
+						arcname = absname[len(abs_src) + 1:]
+						print('zipping %s as %s' % (os.path.join(dirname, filename), arcname))
+						zf.write(absname, arcname)
+		except Exception as ex:
+			print(ex)
+			print("That was error zipping file. Continuing...")
 		
 	print("===========End startLearning()============")

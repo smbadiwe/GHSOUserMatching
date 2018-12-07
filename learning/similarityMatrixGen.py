@@ -35,7 +35,7 @@ def generateSimilarityMatrix(cfg, features):
 	file_append = "with_tags" if with_tags else "without_tags"
 	print("Writing similarity matrix to file")
 	root_dir = os.path.join(os.path.dirname(__file__), "../")
-	io.mmwrite(root_dir + 'data/s_{}.mtx'.format(file_append), S)
+	io.mmwrite(root_dir + 'data/{}/s.mtx'.format(file_append), S)
 
 	print("Closing connection")
 	cur.close()

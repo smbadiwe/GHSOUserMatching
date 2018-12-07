@@ -99,7 +99,7 @@ def makePrediction(cfg, model, features, n_samples, file_append=None, delete_old
 ### Similarity computation hub based on attributes
 def similarity(attr, con, sims):
     if attr == 'dates':
-        dateSimilarity(con.cursor(), con, sims)
+        dateSimilarity(con.cursor(), sims)
     elif attr == 'desc_aboutme':
         descAboutmeSimilarity(con.cursor(), sims)
     elif attr == 'desc_comment':
@@ -119,7 +119,7 @@ def similarity(attr, con, sims):
 
 
 ### Similarity computation on dates
-def tagsSimilarity(cur, con, sims):
+def tagsSimilarity(cur, sims):
     from tagsSimilarity import getGHUserTags, getSOUserTags
 
     labeled_data_table = "labeled_data_test"
@@ -171,7 +171,7 @@ def tagsSimilarity(cur, con, sims):
 
 
 ### Similarity computation on dates
-def dateSimilarity(cur, con, sims):
+def dateSimilarity(cur, sims):
     cur.execute('''
 		select distinct l.g_id, l.s_id, g.created_at::date, s.creation_date
 		from users g, labeled_data_test l, so_users s
@@ -209,6 +209,7 @@ def nameSimilarity(cur, sims):
 
         sim = cosine_similarity(gv, sv)
         sims['user_names'][(p[0], p[1])] = sim[0][0]
+        
     cur.close()
 
 

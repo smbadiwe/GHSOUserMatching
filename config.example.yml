@@ -18,3 +18,4 @@ features: [
 models: ["rf", "gbdt", "knn", "lg"]
 rerun: True # if true, all data is deleted and regenerated
 doCharts: True  # if true, we generate charts after prediction
+zipModel: False

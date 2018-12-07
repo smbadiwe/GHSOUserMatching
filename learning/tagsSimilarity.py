@@ -118,6 +118,8 @@ def getGHUserTags(cur, labeled_table_name):
             gh_user_tags[p[0]] = set([p[1]])
         else:
             gh_user_tags[p[0]].add(p[1])
+    
+    cur.close()
     print("gotten tags for gh users based on projects they DON'T own")
 
     # set each user tag list as a string with the tags sorted
@@ -170,6 +172,8 @@ def getSOUserTags(cur, tags, labeled_table_name):
             else:
                 for tg in used_tags:
                     so_user_tags[p[2]].add(tg)
+    
+    cur.close()
 
     # set each user tag list as a string with the tags sorted
     # print()
