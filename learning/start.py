@@ -174,10 +174,9 @@ if __name__ == "__main__":
     prediction_size = int(cfg["test_size"])  # number of test data samples
     print("Config file loaded.\nrerun: {}\nfeatures: {}.\nmodels: {}\ntrain_size: {}, test_size: {}"
           .format(rerun, features, models, train_size, prediction_size))
-    total_time = 0
 
     # pre-process
-    # total_time = preProcess(cfg)
+    total_time = preProcess(cfg)
 
     # train, learn and predict
 
